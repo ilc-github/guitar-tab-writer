@@ -1,8 +1,3 @@
-'''
-Using base LSTM text generation example from Keras repo:
-https://github.com/fchollet/keras/blob/master/examples/lstm_text_generation.py
-'''
-
 '''Example script to generate text from Nietzsche's writings.
 At least 20 epochs are required before the generated text
 starts sounding coherent.
@@ -21,6 +16,12 @@ from keras.utils.data_utils import get_file
 import numpy as np
 import random
 import sys
+
+
+'''
+Using base LSTM text generation example from Keras repo:
+https://github.com/fchollet/keras/blob/master/examples/lstm_text_generation.py
+'''
 
 # path = get_file('nietzsche.txt', origin="https://s3.amazonaws.com/text-datasets/nietzsche.txt")
 # path = '../data/mini_input.txt'
