@@ -23,8 +23,8 @@ import random
 import sys
 
 # path = get_file('nietzsche.txt', origin="https://s3.amazonaws.com/text-datasets/nietzsche.txt")
-# path = '../data/mini_1mb_input.txt'
-path = '../data/mini_input.txt'
+# path = '../data/mini_input.txt'
+path = '../data/skyrim_repeat.txt'
 text = open(path).read().lower()
 print('corpus length:', len(text))
 

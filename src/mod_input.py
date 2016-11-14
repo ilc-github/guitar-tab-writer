@@ -26,3 +26,7 @@ with open(path_large, 'r') as f:
     ans = []
     for line in f:
         ans.append(line)
+
+ans[0] = ans[0][7:] # remove random symbols from first line
+mini = ans[:48]
+one = ans[:5]
