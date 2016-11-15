@@ -6,49 +6,64 @@ import numpy as np
  class imbalances)
 '''
 
-path_large = '../data/input.txt'
-path_write_mini = '../data/mini_input.txt'
-
-# with open(path_large, 'r') as f:
-#     ans = []
-#     for line in f:
-#         ans.append(line)
-#
 # with open(path_write_mini, 'w') as f:
 #     for item in ans[:300000]:
 #       f.write("%s" % item)
 
-# ''' Write 15k lines of tabs
-# '''
 # with open('mini_1mb_input.txt', 'w') as f:
 #     for item in ans[:15000]:
 #       f.write("%s" % item)
 
-with open(path_large, 'r') as f:
-    ans = []
-    for line in f:
-        ans.append(line)
-
+ans = gen_list('../data/input.txt')
 ans[0] = ans[0][7:] # remove random symbols from first line
 mini = ans[:48]
 one = ans[:5]
 two = ans[6:12]
+group = ans[6:27]
 
-check = []
-for i in xrange(2, len(two[0])):
-    # print two[0][i]
-    check.append(two[0][i])
+class ProcessInputs(object):
 
-chars = ['\n', '%', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '|']
-char_indices = dict((c,i) for i, c in enumerate(chars))
-indices_char = dict((i,c) for i, c in enumerate(chars))
+    def __init__(self, filepath):
+        self.filepath = filepath
+        self.chars = ['\n', '%', '-', '0', '1', '2', '3', '4', '5', '6', \
+                                '7', '8', '9', '|']
+        self.char_indices = dict((c,i) for i, c in enumerate(self.chars))
+        self.indices_char = dict((i,c) for i, c in enumerate(self.chars))
+
+    def gen_list(self):
+        ans = []
+        with open(self.filepath, 'r') as f:
+            for line in f:
+                ans.append(line)
+        return ans
+
+    def vectorize_one_chunk(self, list_text):
+        '''
+        INPUT:  list containing six lines of text (ordered as E, B, G, D, A, E
+                strings)
+        OUTPUT: list of lists, each row representing a time-step (column of single
+                tab values, one for each of six strings E-B-G-D-A-E); columns
+                represent one-hot according to char_indices
+        '''
+        steps = len(list_text[0]) - 1
+        vt = [[] for _ in xrange(steps)]
+
+        for string_num in xrange(6):
+            for i, char in enumerate(list_text[string_num][1:]):
+                vectorize_char = np.zeros(len(self.chars), dtype=np.int)
+                vectorize_char[self.char_indices[char]] = 1
+                vt[i].extend(list(vectorize_char))
+        return vt
+
+# chars = ['\n', '%', '-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '|']
+# char_indices = dict((c,i) for i, c in enumerate(chars))
+# indices_char = dict((i,c) for i, c in enumerate(chars))
 
 ''' Vectorize of one block (block 'two')
 '''
 two
 curr_len = len(two[0])
 steps = curr_len - 1
-
 '''
 [Step 1]
 Produce list of vectorized chars by time step for 1st string E
@@ -76,6 +91,9 @@ Produce list of vectorized chars by time step for 1st string E,
 then extend the list with vectorized chars for the remaining
 5 strings.
 '''
+
+# two = chunk of text, string E to string E (no '%')
+
 vt_check = [[] for _ in xrange(steps)]
 
 for string_num in xrange(6):
@@ -83,6 +101,48 @@ for string_num in xrange(6):
         vectorize_char = np.zeros(len(chars), dtype=np.int)
         vectorize_char[char_indices[char]] = 1
         vt_check[i].extend(list(vectorize_char))
+
+def vectorize_one_chunk(list_text):
+    '''
+    INPUT:  list containing six lines of text (ordered as E, B, G, D, A, E
+            strings)
+    OUTPUT: list of lists, each row representing a time-step (column of single
+            tab values, one for each of six strings E-B-G-D-A-E); columns
+            represent one-hot according to char_indices
+    '''
+    steps = len(list_text[0]) - 1
+    vt_check = [[] for _ in xrange(steps)]
+
+    for string_num in xrange(6):
+        for i, char in enumerate(list_text[string_num][1:]):
+            vectorize_char = np.zeros(len(chars), dtype=np.int)
+            vectorize_char[char_indices[char]] = 1
+            vt_check[i].extend(list(vectorize_char))
+    return vt_check
+
+'''
+[Next step]
+Check if can create list of np arrays instead (as opposed to list of lists)
+Add in layer for handling %, and moving to a new "chunk" (will require
+setting the new steps length for vt list declaration)
+'''
+
+
+''' Vectorize multiple blocks
+'''
+ans = gen_list('../data/input.txt')
+
+if (group[0][0] == 'E') and (group[1][0] == 'B'):
+
+
+
+def vectorize_input(filepath):
+
+    return # vt list w/ vectors
+
+
+
+
 
 
 
