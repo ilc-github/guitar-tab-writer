@@ -24,8 +24,8 @@ https://github.com/fchollet/keras/blob/master/examples/lstm_text_generation.py
 '''
 
 # path = get_file('nietzsche.txt', origin="https://s3.amazonaws.com/text-datasets/nietzsche.txt")
-# path = '../data/mini_input.txt'
-path = '../data/skyrim_repeat.txt'
+path = '../data/mini_input.txt'
+# path = '../data/skyrim_repeat.txt'
 text = open(path).read().lower()
 print('corpus length:', len(text))
 
