@@ -1,7 +1,7 @@
 import numpy as np
 from collections import Counter
 
-''' Modify starter project data (500mb cleaned guitar tabs)
+''' Modify starter project data (500mb guitar tabs)
  * create smaller dataset for experimentation (~300k lines)
  * create pre-processed input file (alternate input layout; reduce character
  class imbalances)
@@ -95,37 +95,27 @@ def check_line_len_uniform(list_text):
     INPUT: list of text, lines of guitar tabs
     OUTPUT: None
     '''
-    num_chunks = 0
-
-    chunk_len = -1
-    uneven_flag = 0
-    num_uneven_chunks = 0
-    num_even_chunks = 0
+    num_chunks, num_uneven, num_even = (0, 0, 0)
+    chunk_len, uneven_flag = (-1, 0)
     for i in xrange(len(list_text)):
         if chunk_len > 0:
-            ''' Second pass
-            '''
-            if list_text[i][0] != '%':
+            if list_text[i][0] != '%': # Second pass
                 if len(list_text[i]) != chunk_len:
                     uneven_flag = 1
-            else:
-                # evaluate chunk
+            else: # evaluate chunk
                 if uneven_flag == 1:
-                    num_uneven_chunks += 1
+                    num_uneven += 1
                     uneven_flag = 0
                     chunk_len = -1
                 else:
-                    num_even_chunks += 1
+                    num_even += 1
                     chunk_len = -1
         else:
-            ''' First pass
-            '''
-            if chunk_len == -1:
+            if chunk_len == -1: # First pass
                 chunk_len = len(list_text[i])
-    print "Number of tab chunks with uneven line lengths = ", num_uneven_chunks
-    print "Number of tab chunks with even line lengths = ", num_even_chunks
-    print "% uneven = ", float(num_uneven_chunks) / (num_uneven_chunks \
-                                                            + num_even_chunks)
+    print "Number of tab chunks with uneven line lengths = ", num_uneven
+    print "Number of tab chunks with even line lengths = ", num_even
+    print "% uneven = ", float(num_uneven) / (num_uneven + num_even)
 
 def remove_uneven_chunks(list_text):
     '''
@@ -205,7 +195,7 @@ if __name__ == '__main__':
 
     ''' Check if there are six lines of tabs between each '%' row
     '''
-    check_six_rows(tabs)
+    # check_six_rows(tabs)
 
     ''' Count # of 6-line chunks that do not have uniform line length
     '''
