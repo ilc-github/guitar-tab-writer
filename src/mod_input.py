@@ -129,6 +129,7 @@ def check_line_len_uniform(list_text): # SLOW, procedural list format
             else: # evaluate chunk
                 if uneven_flag == 1:
                     num_uneven += 1
+                    print list_text[i] # checking for uneven lines
                     uneven_flag = 0
                     chunk_len = -1
                 else:
@@ -141,45 +142,7 @@ def check_line_len_uniform(list_text): # SLOW, procedural list format
     print "Number of tab chunks with even line lengths = ", num_even
     print "% uneven = ", float(num_uneven) / (num_uneven + num_even)
 
-def remove_uneven_chunks_old(list_text): # SLOW, procedural list format
-    '''
-    Check if line length is uniform for each set of 6 tab lines (each set
-    separated by '%').  Removes tab chunks that have uneven line lengths.
-
-    INPUT: list of text, lines of guitar tabs
-    OUTPUT: list of text, lines of guitar tabs (cleaned)
-    '''
-    clean = []
-    i = 0
-    num_clean, num_del = (0, 0)
-    while True:
-        if (list_text[0][0] == 'E') and (list_text[1][0] == 'B'): # if on first E string...
-            tab_chunk = list_text[0:6]
-            flag, len_tracker = (0, 0)
-
-            for line in tab_chunk: # flag = 1 if lines uneven
-                if len_tracker == 0:
-                    len_tracker = len(line)
-                else:
-                    if len(line) != len_tracker:
-                        flag = 1
-            if flag == 0:
-                clean += list_text[0:7] # chunk ok, keep
-                num_clean += 1
-            else:
-                num_del += 1 # chunk uneven, exclude from list
-            if len(list_text) < 7: # stop while loop if no more tab chunks
-                break
-            else:
-                list_text = list_text[7:]
-                print 'Number cleaned chunks = {}, num del = {}'.format(num_clean,num_del)
-                if len(list_text) == 0:
-                    break
-        else:
-            break
-    return clean, num_clean, num_del # list_text, stripped of uneven lines
-
-def remove_uneven_chunks(list_text): # SLOW, procedural list approach
+def OLD_remove_uneven_chunks(list_text): # SLOW, list approach (use pandas alt)
     '''
     Check if line length is uniform for each set of 6 tab lines (each set
     separated by '%').  Removes tab chunks that have uneven line lengths.
@@ -219,7 +182,7 @@ def remove_uneven_chunks(list_text): # SLOW, procedural list approach
     return clean, num_clean, num_del # list_text, stripped of uneven lines
 
 
-def remove_uneven_chunks_numpy(list_text): # attempt later
+def remove_uneven_chunks(list_text):
     '''
     Check if line length is uniform for each set of 6 tab lines (each set
     separated by '%').  Removes tab chunks that have uneven line lengths.
@@ -227,37 +190,35 @@ def remove_uneven_chunks_numpy(list_text): # attempt later
     INPUT: list of text, lines of guitar tabs
     OUTPUT: list of text, lines of guitar tabs (cleaned)
     '''
-    clean = []
-    i = 0
-    num_clean, num_del = (0, 0)
-    length = len(list_text)
-    while length >= 1 + i * 7:
-        # if (list_text[0 + i * 7][0] == 'E') and \
-                            # (list_text[1 + i * 7][0] == 'B'): # if on first E string...
-        flag, len_tracker = (0, 0)
-        lower, upper = (0 + i * 7, 6 + i * 7)
-        for line in list_text[lower:upper]: # flag = 1 if lines uneven
-            if len_tracker == 0:
-                len_tracker = len(line)
-            else:
-                if len(line) != len_tracker:
-                    flag = 1
-        if flag == 0:
-            clean += list_text[lower:upper + 1] # chunk ok, keep
-            num_clean += 1
-        else:
-            num_del += 1 # chunk uneven, exclude from list
-        if length - 7 * i < 7: # stop while loop if no more tab chunks
-            break
-        else:
-            # list_text = list_text[7:]
-            i += 1
-            # print 'Number cleaned chunks = {}, num del = {}'.format(num_clean,num_del)
-            if length - 7 * i == 0:
-                break
-        # else:
-            # break
-    return clean, num_clean, num_del # list_text, stripped of uneven lines
+    # Attempt to flag uneven line lengths (within 6-string groupings) via pandas
+    df = pd.DataFrame({'text': list_text})
+    df.reset_index(drop=True, inplace=True)
+    df['length'] = df.text.apply(lambda x: len(x))
+    df.length = df.length * 1.
+    df['num'] = df.index + 1.
+
+    grp_column = []
+    for group in xrange(len(df)/7):
+        for i in xrange(7):
+            grp_column.append(group)
+
+    df['chunk'] = grp_column # add tab 'chunk' group ID column
+    df_temp = (df.groupby('chunk')['length'].sum() - 2).to_frame() # use grp sum
+    df_temp.rename(columns = {'length': 'grp_sum'}, inplace=True)
+    df_temp.reset_index(inplace=True)
+    df_merged = df.merge(df_temp, left_on='chunk', right_on='chunk', how='left')
+    df_merged['divider'] = df_merged.text == '%\n'
+    df_merged['check'] = df_merged.grp_sum % df.length
+    df_merged['drop_flag'] = 0 # mark tab 'chunks' that need to be dropped
+    df_merged.loc[df_merged.check != 0, 'drop_flag'] = 1 # flag uneven rows
+    df_merged2 = df_merged[df_merged.divider == False] \
+                                .groupby('chunk')['drop_flag'].max() # flag grps
+    df_merged2 = df_merged2.to_frame()
+    df_merged2.reset_index(inplace=True)
+
+    df_new = df.merge(df_merged2, left_on='chunk', right_on='chunk', how='left')
+    df_new = df_new[df_new.drop_flag == 0]
+    return list(df_new.text)
 
 
 
@@ -319,33 +280,21 @@ if __name__ == '__main__':
     '''
     check_line_len_uniform(tabs)
 
+    ''' df_merged2 seeing 829073 chunks, 27061 need to be removed
+
+    In [25]: check_line_len_uniform(tabs)
+    Number of tab chunks with uneven line lengths =  27071
+    Number of tab chunks with even line lengths =  802003
+    % uneven =  0.0326520913694
+    '''
+
+    # Attempt to flag uneven line lengths (within 6-string groupings) via pandas
+    tabs_clean = remove_uneven_chunks_numpy(tabs[6:])
+
+
     ''' Remove time steps where no note is played.  Currently too many blanks
     (i.e. '-' values).
     '''
     # remove_blanks(tabs)
 
-    # Attempt to flag uneven line lengths (within 6-string groupings) via pandas
-    df = pd.DataFrame({'text': tabs})
-    df = df[6:]
-    df.reset_index(drop=True, inplace=True)
-    df['length'] = df.text.apply(lambda x: len(x))
-    df.length = df.length * 1.
-    df['num'] = df.index + 1.
-
-    grp_column = []
-    for group in xrange(len(df)/7):
-        for i in xrange(7):
-            grp_column.append(group)
-
-    df['chunk'] = grp_column
-    # df.loc[df.text=='%\n', 'chunk'] = -1
-    # df_check = (df.groupby('chunk')['length'].mean() * 7. - 2) / 6
-    df_check = (df.groupby('chunk')['length'].sum() - 2)
-    df_check = df_check.to_frame()
-    df_check.rename(columns = {'length': 'grp_avg'}, inplace=True)
-    df_check.reset_index(inplace=True)
-    df_merged = df.merge(df_check, left_on='chunk', right_on='chunk', how='left')
-    df_merged['divider'] = df_merged.text == '%\n'
-
-
-    # temp, clean, removed = remove_uneven_chunks(tabs[6:100001])
+    
