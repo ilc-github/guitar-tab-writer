@@ -1,5 +1,8 @@
 import numpy as np
+import pandas as pd
 from collections import Counter
+import time
+
 
 ''' Modify starter project data (500mb guitar tabs)
  * create smaller dataset for experimentation (~300k lines)
@@ -59,22 +62,43 @@ class ProcessInputs(object):
                 vt[i].extend(list(vectorize_char))
         return vt
 
+    # def vectorize_all_old(self, list_text):
+    #     vt_all = []
+    #     while True:
+    #         if (list_text[0][0] == 'E') and (list_text[1][0] == 'B'):
+    #             tab_chunk = list_text[0:6]
+    #             vt_temp = self.vectorize_one_chunk(tab_chunk)
+    #             vt_all += vt_temp
+    #             if len(list_text) < 7:
+    #                 break
+    #             else:
+    #                 list_text = list_text[7:]
+    #                 if len(list_text) == 0:
+    #                     break
+    #         else:
+    #             break
+    #     return vt_all
+
     def vectorize_all(self, list_text):
         vt_all = []
-        while True:
-            if (list_text[0][0] == 'E') and (list_text[1][0] == 'B'):
-                tab_chunk = list_text[0:6]
-                vt_temp = self.vectorize_one_chunk(tab_chunk)
+        i = 0
+        while len(list_text) >= 1 + i * 7:
+            if (list_text[0 + i * 7][0] == 'E') and \
+                                (list_text[1 + i * 7][0] == 'B'):
+                lower, upper = (0 + i * 7, 6 + i * 7)
+                vt_temp = self.vectorize_one_chunk(list_text[lower:upper])
                 vt_all += vt_temp
-                if len(list_text) < 7:
+                if len(list_text[7 * i:]) < 7:
                     break
                 else:
-                    list_text = list_text[7:]
-                    if len(list_text) == 0:
+                    # list_text = list_text[7:]
+                    i += 1
+                    if len(list_text[7 * i:]) == 0:
                         break
             else:
                 break
         return vt_all
+
 
 
     # if group[0][0] == 'E' and group[0+1][0] == 'B':
@@ -87,7 +111,7 @@ class ProcessInputs(object):
     #     '''repeat until no more'''
 
 
-def check_line_len_uniform(list_text):
+def check_line_len_uniform(list_text): # SLOW, procedural list format
     '''
     Check if line length is uniform--prints out # of problematic tab chunks
     (sets of 6 lines, separated by '%')
@@ -117,7 +141,7 @@ def check_line_len_uniform(list_text):
     print "Number of tab chunks with even line lengths = ", num_even
     print "% uneven = ", float(num_uneven) / (num_uneven + num_even)
 
-def remove_uneven_chunks(list_text):
+def remove_uneven_chunks_old(list_text): # SLOW, procedural list format
     '''
     Check if line length is uniform for each set of 6 tab lines (each set
     separated by '%').  Removes tab chunks that have uneven line lengths.
@@ -126,6 +150,7 @@ def remove_uneven_chunks(list_text):
     OUTPUT: list of text, lines of guitar tabs (cleaned)
     '''
     clean = []
+    i = 0
     num_clean, num_del = (0, 0)
     while True:
         if (list_text[0][0] == 'E') and (list_text[1][0] == 'B'): # if on first E string...
@@ -154,6 +179,88 @@ def remove_uneven_chunks(list_text):
             break
     return clean, num_clean, num_del # list_text, stripped of uneven lines
 
+def remove_uneven_chunks(list_text): # SLOW, procedural list approach
+    '''
+    Check if line length is uniform for each set of 6 tab lines (each set
+    separated by '%').  Removes tab chunks that have uneven line lengths.
+
+    INPUT: list of text, lines of guitar tabs
+    OUTPUT: list of text, lines of guitar tabs (cleaned)
+    '''
+    clean = []
+    i = 0
+    num_clean, num_del = (0, 0)
+    while len(list_text) >= 1 + i * 7:
+        if (list_text[0 + i * 7][0] == 'E') and \
+                            (list_text[1 + i * 7][0] == 'B'): # if on first E string...
+            flag, len_tracker = (0, 0)
+            lower, upper = (0 + i * 7, 6 + i * 7)
+            for line in list_text[lower:upper]: # flag = 1 if lines uneven
+                if len_tracker == 0:
+                    len_tracker = len(line)
+                else:
+                    if len(line) != len_tracker:
+                        flag = 1
+            if flag == 0:
+                clean += list_text[lower:upper + 1] # chunk ok, keep
+                num_clean += 1
+            else:
+                num_del += 1 # chunk uneven, exclude from list
+            if len(list_text[7 * i:]) < 7: # stop while loop if no more tab chunks
+                break
+            else:
+                # list_text = list_text[7:]
+                i += 1
+                # print 'Number cleaned chunks = {}, num del = {}'.format(num_clean,num_del)
+                if len(list_text[7 * i:]) == 0:
+                    break
+        else:
+            break
+    return clean, num_clean, num_del # list_text, stripped of uneven lines
+
+
+def remove_uneven_chunks_numpy(list_text): # attempt later
+    '''
+    Check if line length is uniform for each set of 6 tab lines (each set
+    separated by '%').  Removes tab chunks that have uneven line lengths.
+
+    INPUT: list of text, lines of guitar tabs
+    OUTPUT: list of text, lines of guitar tabs (cleaned)
+    '''
+    clean = []
+    i = 0
+    num_clean, num_del = (0, 0)
+    length = len(list_text)
+    while length >= 1 + i * 7:
+        # if (list_text[0 + i * 7][0] == 'E') and \
+                            # (list_text[1 + i * 7][0] == 'B'): # if on first E string...
+        flag, len_tracker = (0, 0)
+        lower, upper = (0 + i * 7, 6 + i * 7)
+        for line in list_text[lower:upper]: # flag = 1 if lines uneven
+            if len_tracker == 0:
+                len_tracker = len(line)
+            else:
+                if len(line) != len_tracker:
+                    flag = 1
+        if flag == 0:
+            clean += list_text[lower:upper + 1] # chunk ok, keep
+            num_clean += 1
+        else:
+            num_del += 1 # chunk uneven, exclude from list
+        if length - 7 * i < 7: # stop while loop if no more tab chunks
+            break
+        else:
+            # list_text = list_text[7:]
+            i += 1
+            # print 'Number cleaned chunks = {}, num del = {}'.format(num_clean,num_del)
+            if length - 7 * i == 0:
+                break
+        # else:
+            # break
+    return clean, num_clean, num_del # list_text, stripped of uneven lines
+
+
+
 def remove_blanks(list_text): # remove time steps where no notes are playing (reduce number of '-' throughout tab inputs)
     '''
     Remove time steps where no notes are playing.  Reduce number of '-'
@@ -175,6 +282,17 @@ def check_six_rows(list_text):
         cnt.update(list_text[i][0])
     print cnt
 
+def print_v2n(list_vector, num_notes = 1):
+    '''
+    Print vector for single note
+
+    INPUT: List of vectorized tab, single time-step
+    OUTPUT: None
+    '''
+    for i in xrange(num_notes):
+        print "Time step = ", i + 1
+        for j in xrange(0, 84, 14):
+            print list_vector[i][j:j + 14]
 
 
 if __name__ == '__main__':
@@ -205,6 +323,29 @@ if __name__ == '__main__':
     (i.e. '-' values).
     '''
     # remove_blanks(tabs)
+
+    # Attempt to flag uneven line lengths (within 6-string groupings) via pandas
+    df = pd.DataFrame({'text': tabs})
+    df = df[6:]
+    df.reset_index(drop=True, inplace=True)
+    df['length'] = df.text.apply(lambda x: len(x))
+    df.length = df.length * 1.
+    df['num'] = df.index + 1.
+
+    grp_column = []
+    for group in xrange(len(df)/7):
+        for i in xrange(7):
+            grp_column.append(group)
+
+    df['chunk'] = grp_column
+    # df.loc[df.text=='%\n', 'chunk'] = -1
+    # df_check = (df.groupby('chunk')['length'].mean() * 7. - 2) / 6
+    df_check = (df.groupby('chunk')['length'].sum() - 2)
+    df_check = df_check.to_frame()
+    df_check.rename(columns = {'length': 'grp_avg'}, inplace=True)
+    df_check.reset_index(inplace=True)
+    df_merged = df.merge(df_check, left_on='chunk', right_on='chunk', how='left')
+    df_merged['divider'] = df_merged.text == '%\n'
 
 
     # temp, clean, removed = remove_uneven_chunks(tabs[6:100001])
