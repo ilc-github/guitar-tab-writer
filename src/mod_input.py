@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from collections import Counter
 import time
+import re
 
 
 ''' Modify starter project data (500mb guitar tabs)
@@ -44,23 +45,23 @@ class ProcessInputs(object):
         vt[i].extend(vectorize(char))  # i = time step
     '''
 
-    def vectorize_one_chunk(self, list_text):
-        '''
-        INPUT:  list containing six lines of text (ordered as E, B, G, D, A, E
-                strings)
-        OUTPUT: list of lists, each row representing a time-step (column of single
-                tab values, one for each of six strings E-B-G-D-A-E); columns
-                represent one-hot according to char_indices
-        '''
-        steps = len(list_text[0]) - 1
-        vt = [[] for _ in xrange(steps)]
-
-        for string_num in xrange(6):
-            for i, char in enumerate(list_text[string_num][1:]):
-                vectorize_char = np.zeros(len(self.chars), dtype=np.int)
-                vectorize_char[self.char_indices[char]] = 1
-                vt[i].extend(list(vectorize_char))
-        return vt
+    # def vectorize_one_chunk(self, list_text):
+    #     '''
+    #     INPUT:  list containing six lines of text (ordered as E, B, G, D, A, E
+    #             strings)
+    #     OUTPUT: list of lists, each row representing a time-step (column of single
+    #             tab values, one for each of six strings E-B-G-D-A-E); columns
+    #             represent one-hot according to char_indices
+    #     '''
+    #     steps = len(list_text[0]) - 1
+    #     vt = [[] for _ in xrange(steps)]
+    #
+    #     for string_num in xrange(6):
+    #         for i, char in enumerate(list_text[string_num][1:]):
+    #             vectorize_char = np.zeros(len(self.chars), dtype=np.int)
+    #             vectorize_char[self.char_indices[char]] = 1
+    #             vt[i].extend(list(vectorize_char))
+    #     return vt
 
     def vectorize_one_chunk_numpy(self, list_text):
         '''
@@ -85,6 +86,32 @@ class ProcessInputs(object):
                 vt[i, col_index_bump + self.char_indices[char]] = 1
         return vt
 
+    def vec_one_chunk_pandas(self, str_block):
+        '''
+        INPUT:  list containing six lines of text (ordered as E, B, G, D, A, E
+                strings)
+        OUTPUT: list of lists, each row representing a time-step (column of single
+                tab values, one for each of six strings E-B-G-D-A-E); columns
+                represent one-hot according to char_indices
+        '''
+        # steps = len(str_block[0]) - 1
+        len_row = str_block.find('\n',1)
+        steps = len(str_block[2:len_row]) + 1 # Ignore initial '\n' & string name
+
+        np_dim = (steps, len(self.chars) * 6)
+        vt = np.zeros(np_dim)
+
+        for string_num in xrange(6):
+            lower = str_block.find('\n', string_num * len_row) + 2
+            upper = str_block.find('\n', string_num * len_row + 1) + 1
+            # print "lower = ", lower
+            # print "upper = ", upper
+            # for i, char in enumerate(str_block[string_num][1:]):
+            for i, char in enumerate(str_block[lower:upper]):
+                col_index_bump = (string_num) * len(self.chars)
+                vt[i, col_index_bump + self.char_indices[char]] = 1
+        return vt
+
     # def vectorize_all_old(self, list_text):
     #     vt_all = []
     #     while True:
@@ -102,30 +129,30 @@ class ProcessInputs(object):
     #             break
     #     return vt_all
 
-    def vectorize_all(self, list_text):
-        start = time.time()
-        vt_all = []
-        i = 0
-        while len(list_text) >= 1 + i * 7:
-            if (list_text[0 + i * 7][0] == 'E') and \
-                                (list_text[1 + i * 7][0] == 'B'):
-                lower, upper = (0 + i * 7, 6 + i * 7)
-                vt_temp = self.vectorize_one_chunk(list_text[lower:upper])
-                vt_all += vt_temp
-                if len(list_text[7 * i:]) < 7:
-                    break
-                else:
-                    # list_text = list_text[7:]
-                    i += 1
-                    if len(list_text[7 * i:]) == 0:
-                        break
-            else:
-                break
-        end = time.time()
-        print "Time to run vectorize_all = ", (end - start)
-        return vt_all, (end - start)
+    # def vectorize_all(self, list_text):
+    #     start = time.time()
+    #     vt_all = []
+    #     i = 0
+    #     while len(list_text) >= 1 + i * 7:
+    #         if (list_text[0 + i * 7][0] == 'E') and \
+    #                             (list_text[1 + i * 7][0] == 'B'):
+    #             lower, upper = (0 + i * 7, 6 + i * 7)
+    #             vt_temp = self.vectorize_one_chunk(list_text[lower:upper])
+    #             vt_all += vt_temp
+    #             if len(list_text[7 * i:]) < 7:
+    #                 break
+    #             else:
+    #                 # list_text = list_text[7:]
+    #                 i += 1
+    #                 if len(list_text[7 * i:]) == 0:
+    #                     break
+    #         else:
+    #             break
+    #     end = time.time()
+    #     print "Time to run vectorize_all = ", (end - start)
+    #     return vt_all, (end - start)
 
-    def vectorize_all_numpy(self, list_text):
+    def vectorize_all_numpy(self, list_text, verbose=False):
         start = time.time()
         vt_all = None
         i = 0
@@ -143,6 +170,8 @@ class ProcessInputs(object):
                 else:
                     # list_text = list_text[7:]
                     i += 1
+                    if verbose:
+                        print 'Completed iteration #', i
                     if len(list_text[7 * i:]) == 0:
                         break
             else:
@@ -152,6 +181,22 @@ class ProcessInputs(object):
         return vt_all, (end - start)
 
 
+    def vec_one_line(self, single_line, verbose=False):
+        '''
+        INPUT: cleaned tabs list, SINGLE line (str)
+        OUTPUT: vectorized tabs, numpy 2D array
+        '''
+        line_vec = np.zeros((14, len(single_line[1:])))
+        for i, char in enumerate(single_line[1:]):
+            line_vec[i, self.char_indices[char]] = 1
+        return line_vec
+
+    def vec_one_block():
+        pass
+
+    def vec_all_lines():
+        # loop through the BLOCKS, pass a block
+        pass
 
     # if group[0][0] == 'E' and group[0+1][0] == 'B':
     #     ''' create tab chunk'''
@@ -195,44 +240,44 @@ def check_line_len_uniform(list_text, verbose=False): # SLOW, procedural list fo
     print "Number of tab chunks with even line lengths = ", num_even
     print "% uneven = ", float(num_uneven) / (num_uneven + num_even)
 
-def OLD_remove_uneven_chunks(list_text): # SLOW, list approach (use pandas alt)
-    '''
-    Check if line length is uniform for each set of 6 tab lines (each set
-    separated by '%').  Removes tab chunks that have uneven line lengths.
-
-    INPUT: list of text, lines of guitar tabs
-    OUTPUT: list of text, lines of guitar tabs (cleaned)
-    '''
-    clean = []
-    i = 0
-    num_clean, num_del = (0, 0)
-    while len(list_text) >= 1 + i * 7:
-        if (list_text[0 + i * 7][0] == 'E') and \
-                            (list_text[1 + i * 7][0] == 'B'): # if on first E string...
-            flag, len_tracker = (0, 0)
-            lower, upper = (0 + i * 7, 6 + i * 7)
-            for line in list_text[lower:upper]: # flag = 1 if lines uneven
-                if len_tracker == 0:
-                    len_tracker = len(line)
-                else:
-                    if len(line) != len_tracker:
-                        flag = 1
-            if flag == 0:
-                clean += list_text[lower:upper + 1] # chunk ok, keep
-                num_clean += 1
-            else:
-                num_del += 1 # chunk uneven, exclude from list
-            if len(list_text[7 * i:]) < 7: # stop while loop if no more tab chunks
-                break
-            else:
-                # list_text = list_text[7:]
-                i += 1
-                # print 'Number cleaned chunks = {}, num del = {}'.format(num_clean,num_del)
-                if len(list_text[7 * i:]) == 0:
-                    break
-        else:
-            break
-    return clean, num_clean, num_del # list_text, stripped of uneven lines
+# def OLD_remove_uneven_chunks(list_text, verbose=False): # SLOW, list approach (use pandas alt)
+#     '''
+#     Check if line length is uniform for each set of 6 tab lines (each set
+#     separated by '%').  Removes tab chunks that have uneven line lengths.
+#
+#     INPUT: list of text, lines of guitar tabs
+#     OUTPUT: list of text, lines of guitar tabs (cleaned)
+#     '''
+#     clean = []
+#     i = 0
+#     num_clean, num_del = (0, 0)
+#     while len(list_text) >= 1 + i * 7:
+#         if (list_text[0 + i * 7][0] == 'E') and \
+#                             (list_text[1 + i * 7][0] == 'B'): # if on first E string...
+#             flag, len_tracker = (0, 0)
+#             lower, upper = (0 + i * 7, 6 + i * 7)
+#             for line in list_text[lower:upper]: # flag = 1 if lines uneven
+#                 if len_tracker == 0:
+#                     len_tracker = len(line)
+#                 else:
+#                     if len(line) != len_tracker:
+#                         flag = 1
+#             if flag == 0:
+#                 clean += list_text[lower:upper + 1] # chunk ok, keep
+#                 num_clean += 1
+#             else:
+#                 num_del += 1 # chunk uneven, exclude from list
+#             if len(list_text[7 * i:]) < 7: # stop while loop if no more tab chunks
+#                 break
+#             else:
+#                 i += 1
+#                 if verbose:
+#                     print 'Number cleaned chunks = {}, num del = {}'.format(num_clean,num_del)
+#                 if len(list_text[7 * i:]) == 0:
+#                     break
+#         else:
+#             break
+#     return clean, num_clean, num_del # list_text, stripped of uneven lines
 
 
 def remove_uneven_chunks(list_text):
@@ -274,13 +319,32 @@ def remove_uneven_chunks(list_text):
     return list(df_new.text)
 
 
-
 def remove_blanks(list_text): # remove time steps where no notes are playing (reduce number of '-' throughout tab inputs)
     '''
     Remove time steps where no notes are playing.  Reduce number of '-'
     throughout tab inputs--produce less sparse input.
     INPUT: list of text, lines of guitar tabs
     OUTPUT: list of text, lines of guitar tabs
+    '''
+    pass
+
+def flatten_text(list_text):
+    '''
+    Rearrange input tab text from the following format:
+
+    'E|------|\n'
+    'B|--1---|\n'
+    'G|----2-|\n'
+    'D|-0----|\n'
+    'A|------|\n'
+    'E|------|\n'
+
+    ...to a flat text format:
+
+    '||||||.------.---0--.-1----.------.--2---.------.||||||.\n\n\n\n\n\n'
+
+    INPUT: list of text, lines of guitar tabs
+    OUTPUT: list of text, lines of guitar tabs, flattened
     '''
     pass
 
@@ -308,20 +372,28 @@ def print_v2n(list_vector, num_notes = 1):
         for j in xrange(0, 84, 14):
             print list_vector[i][j:j + 14]
 
+def write_to_txt(list_text, filename):
+    with open('../data/' + filename + '.txt', 'w') as f:
+        for line in list_text:
+            f.write(line)
+
+def read_blocks_from_txt(filename):
+    with open(filename) as f:
+        txt = f.read()
+    blocks = re.split('%', txt)
+    return blocks
+
 
 if __name__ == '__main__':
     inputs = ProcessInputs('../data/input.txt')
-    tabs = inputs.gen_list()
+    # inputs = ProcessInputs('../data/skyrim_repeat.txt')
+    # tabs = inputs.gen_list()
 
-    tabs[0] = tabs[0][7:] # remove random symbols from first line
-    two = tabs[6:12]
+    # tabs[0] = tabs[0][7:] # remove random symbols from first line
+    # two = tabs[6:12]
 
-    vt = inputs.vectorize_one_chunk(two)
-    print "Len of vt = ", len(vt)
-    print "Len of vt[0] = ", len(vt[0])
-
-    group = tabs[6:27]
-    mini = tabs[:48]
+    # group = tabs[6:27]
+    # mini = tabs[:48]
 
     # vt_group = inputs.vectorize_all(tabs[6:1000005])
 
@@ -331,7 +403,7 @@ if __name__ == '__main__':
 
     ''' Count # of 6-line chunks that do not have uniform line length
     '''
-    check_line_len_uniform(tabs)
+    # check_line_len_uniform(tabs)
 
     ''' df_merged2 seeing 829073 chunks, 27061 need to be removed
 
@@ -341,11 +413,36 @@ if __name__ == '__main__':
     % uneven =  0.0326520913694
     '''
 
-    # Attempt to flag uneven line lengths (within 6-string groupings) via pandas
-    tabs_clean = remove_uneven_chunks(tabs[6:])
+    ''' Attempt to flag uneven line lengths (within 6-string groupings) via
+    pandas
+    '''
+    # tabs_clean = remove_uneven_chunks(tabs[6:])
+    # write_to_txt(tabs_clean, 'input_clean')
 
-    tabs_vector, _ = inputs.vectorize_all_numpy(tabs_clean)
-    tabs_vector.dump('tabs_vector.dat')
+
+    '''
+    Create clean mini_input file
+    '''
+    inputs = ProcessInputs('../data/mini_input.txt')
+    tabs = inputs.gen_list()
+    tabs_clean = remove_uneven_chunks(tabs[6:299998])
+    write_to_txt(tabs_clean, 'mini_input_clean')
+
+    # blocks = read_blocks_from_txt('../data/input_clean.txt')
+    blocks = read_blocks_from_txt('../data/mini_input_clean.txt')
+
+    df = pd.DataFrame({'blocks': blocks})
+    df.iloc[0] = '\n' + df.iloc[0]
+    df = df.iloc[:-1]
+
+    check = df.iloc[0]['blocks']
+
+    df['block_onehot'] = df['blocks'].map(lambda x: inputs.vec_one_chunk_pandas(x))
+    # vector_tabs = np.concatenate(df.block_onehot.values, axis=0)
+    # vector_tabs.dump('../data/mini_input_vector.dat')
+
+    # tabs_vector, _ = inputs.vectorize_all_numpy(tabs_clean, verbose=True)
+    # tabs_vector.dump('tabs_vector.dat')
 
 
 
