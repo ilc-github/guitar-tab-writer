@@ -62,6 +62,29 @@ class ProcessInputs(object):
                 vt[i].extend(list(vectorize_char))
         return vt
 
+    def vectorize_one_chunk_numpy(self, list_text):
+        '''
+        INPUT:  list containing six lines of text (ordered as E, B, G, D, A, E
+                strings)
+        OUTPUT: list of lists, each row representing a time-step (column of single
+                tab values, one for each of six strings E-B-G-D-A-E); columns
+                represent one-hot according to char_indices
+        '''
+        steps = len(list_text[0]) - 1
+        # vt = [[] for _ in xrange(steps)]
+
+        np_dim = (steps, len(self.chars) * 6)
+        vt = np.zeros(np_dim)
+
+        for string_num in xrange(6):
+            for i, char in enumerate(list_text[string_num][1:]):
+                # vectorize_char = np.zeros(len(self.chars), dtype=np.int)
+                # vectorize_char[self.char_indices[char]] = 1
+                # vt[i].extend(list(vectorize_char))
+                col_index_bump = (string_num) * len(self.chars)
+                vt[i, col_index_bump + self.char_indices[char]] = 1
+        return vt
+
     # def vectorize_all_old(self, list_text):
     #     vt_all = []
     #     while True:
@@ -80,6 +103,7 @@ class ProcessInputs(object):
     #     return vt_all
 
     def vectorize_all(self, list_text):
+        start = time.time()
         vt_all = []
         i = 0
         while len(list_text) >= 1 + i * 7:
@@ -97,7 +121,35 @@ class ProcessInputs(object):
                         break
             else:
                 break
-        return vt_all
+        end = time.time()
+        print "Time to run vectorize_all = ", (end - start)
+        return vt_all, (end - start)
+
+    def vectorize_all_numpy(self, list_text):
+        start = time.time()
+        vt_all = None
+        i = 0
+        while len(list_text) >= 1 + i * 7:
+            if (list_text[0 + i * 7][0] == 'E') and \
+                                (list_text[1 + i * 7][0] == 'B'):
+                lower, upper = (0 + i * 7, 6 + i * 7)
+                vt_temp = self.vectorize_one_chunk_numpy(list_text[lower:upper])
+                if vt_all == None: # check if vt_all has all zeros
+                    vt_all = vt_temp # first tab chunk numpy array
+                else:
+                    vt_all = np.append(vt_all, vt_temp, axis=0) # more np arrays
+                if len(list_text[7 * i:]) < 7:
+                    break
+                else:
+                    # list_text = list_text[7:]
+                    i += 1
+                    if len(list_text[7 * i:]) == 0:
+                        break
+            else:
+                break
+        end = time.time()
+        print "Time to run vectorize_all = ", (end - start)
+        return vt_all, (end - start)
 
 
 
@@ -111,7 +163,7 @@ class ProcessInputs(object):
     #     '''repeat until no more'''
 
 
-def check_line_len_uniform(list_text): # SLOW, procedural list format
+def check_line_len_uniform(list_text, verbose=False): # SLOW, procedural list format
     '''
     Check if line length is uniform--prints out # of problematic tab chunks
     (sets of 6 lines, separated by '%')
@@ -129,7 +181,8 @@ def check_line_len_uniform(list_text): # SLOW, procedural list format
             else: # evaluate chunk
                 if uneven_flag == 1:
                     num_uneven += 1
-                    print list_text[i] # checking for uneven lines
+                    if verbose:
+                        print list_text[i] # checking for uneven lines
                     uneven_flag = 0
                     chunk_len = -1
                 else:
@@ -289,12 +342,14 @@ if __name__ == '__main__':
     '''
 
     # Attempt to flag uneven line lengths (within 6-string groupings) via pandas
-    tabs_clean = remove_uneven_chunks_numpy(tabs[6:])
+    tabs_clean = remove_uneven_chunks(tabs[6:])
+
+    tabs_vector, _ = inputs.vectorize_all_numpy(tabs_clean)
+    tabs_vector.dump('tabs_vector.dat')
+
 
 
     ''' Remove time steps where no note is played.  Currently too many blanks
     (i.e. '-' values).
     '''
     # remove_blanks(tabs)
-
-    
