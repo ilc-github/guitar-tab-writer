@@ -38,28 +38,40 @@ chars = ['\n', '%', '-', '0', '1', '2', '3', '4', '5', '6', \
 char_indices = dict((c,i) for i, c in enumerate(chars))
 indices_char = dict((i,c) for i, c in enumerate(chars))
 
-clean1 = np.load('clean1_np_mat.npy')
-clean2 = np.load('clean2_np_mat.npy')
+clean1 = np.load('../data/clean1_np_mat.npy')
+# clean2 = np.load('clean2_np_mat.npy')
 
-mat = np.concatenate((clean1, clean2), axis=0).astype(np.bool)
+# mat = np.concatenate((clean1, clean2), axis=0).astype(np.bool)
+mat = clean1
 
 # sample from numpy matrix in semi-redundant sequences of maxlen time-steps
 maxlen = 40
 step = 2
-timesteps = []
-next_chars = []
+timesteps_windows = []
+next_timestep = []
 for i in xrange(0, len(mat) - maxlen, step):
-    timesteps.append(mat[i: i + maxlen])
-    next_chars.append(mat[i + maxlen])
-print('nb sequences:', len(timesteps))
+    timesteps_windows.append(mat[i: i + maxlen])
+    next_timestep.append(mat[i + maxlen])
+print('nb sequences:', len(timesteps_windows))
 
 print('Vectorization...')
-X = np.zeros((len(timesteps), maxlen, len(chars)), dtype=np.bool)
-y = np.zeros((len(timesteps), len(chars)), dtype=np.bool)
-for i, timestep in enumerate(timesteps):
-    for t, char in enumerate(timestep):
-        X[i, t, char_indices[char]] = 1
-    y[i, char_indices[next_chars[i]]] = 1
+X = np.zeros((len(timesteps_windows), maxlen, len(chars) * 6), dtype=np.bool)
+y = np.zeros((len(timesteps_windows), len(chars) * 6), dtype=np.bool)
+for i, timesteps in enumerate(timesteps_windows):
+    for t, step in enumerate(timesteps):
+        for j, val in enumerate(step):
+            one_hot_index = None
+            if j > 13:
+                one_hot_index = j % 14
+            else:
+                one_hot_index = j
+            # X[i, t, char_indices[one_hot_index]] = np.bool(val)
+            X[i, t, j] = np.bool(val)
+
+for i, timestep in enumerate(next_timestep):
+    for j, val in enumerate(timestep):
+        y[i, char_indices[j % 13 - 1]] = val
+
 
 
 # build the model: a single LSTM
