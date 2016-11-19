@@ -24,30 +24,40 @@ Using base LSTM text generation example from Keras repo
 
 # path = get_file('nietzsche.txt', origin="https://s3.amazonaws.com/text-datasets/nietzsche.txt")
 # path = '../data/mini_input.txt'
-path = '../data/skyrim_repeat.txt'
-text = open(path).read().lower()
-print('corpus length:', len(text))
+# path = '../data/skyrim_repeat.txt'
+# text = open(path).read().lower()
+# print('corpus length:', len(text))
 
-chars = sorted(list(set(text)))
-print('total chars:', len(chars))
-char_indices = dict((c, i) for i, c in enumerate(chars))
-indices_char = dict((i, c) for i, c in enumerate(chars))
+# chars = sorted(list(set(text)))
+# print('total chars:', len(chars))
+# char_indices = dict((c, i) for i, c in enumerate(chars))
+# indices_char = dict((i, c) for i, c in enumerate(chars))
 
-# cut the text in semi-redundant sequences of maxlen characters
+chars = ['\n', '%', '-', '0', '1', '2', '3', '4', '5', '6', \
+                        '7', '8', '9', '|']
+char_indices = dict((c,i) for i, c in enumerate(chars))
+indices_char = dict((i,c) for i, c in enumerate(chars))
+
+clean1 = np.load('clean1_np_mat.npy')
+clean2 = np.load('clean2_np_mat.npy')
+
+mat = np.concatenate((clean1, clean2), axis=0).astype(np.bool)
+
+# sample from numpy matrix in semi-redundant sequences of maxlen time-steps
 maxlen = 40
-step = 3
-sentences = []
+step = 2
+timesteps = []
 next_chars = []
-for i in range(0, len(text) - maxlen, step):
-    sentences.append(text[i: i + maxlen])
-    next_chars.append(text[i + maxlen])
-print('nb sequences:', len(sentences))
+for i in xrange(0, len(mat) - maxlen, step):
+    timesteps.append(mat[i: i + maxlen])
+    next_chars.append(mat[i + maxlen])
+print('nb sequences:', len(timesteps))
 
 print('Vectorization...')
-X = np.zeros((len(sentences), maxlen, len(chars)), dtype=np.bool)
-y = np.zeros((len(sentences), len(chars)), dtype=np.bool)
-for i, sentence in enumerate(sentences):
-    for t, char in enumerate(sentence):
+X = np.zeros((len(timesteps), maxlen, len(chars)), dtype=np.bool)
+y = np.zeros((len(timesteps), len(chars)), dtype=np.bool)
+for i, timestep in enumerate(timesteps):
+    for t, char in enumerate(timestep):
         X[i, t, char_indices[char]] = 1
     y[i, char_indices[next_chars[i]]] = 1
 
@@ -80,14 +90,14 @@ for iteration in range(1, 60):
     print('Iteration', iteration)
     model.fit(X, y, batch_size=128, nb_epoch=1)
 
-    start_index = random.randint(0, len(text) - maxlen - 1)
+    start_index = random.randint(0, len(mat) - maxlen - 1)
 
     for diversity in [0.2, 0.5, 1.0, 1.2]:
         print()
         print('----- diversity:', diversity)
 
         generated = ''
-        sentence = text[start_index: start_index + maxlen]
+        sentence = mat[start_index: start_index + maxlen]
         generated += sentence
         print('----- Generating with seed: "' + sentence + '"')
         sys.stdout.write(generated)

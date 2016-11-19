@@ -83,6 +83,27 @@ class ProcessInputs(object):
                 vt[i, col_index_bump + self.char_indices[char]] = 1
         return vt
 
+    def vec_from_file(self, filename):
+        blocks = read_blocks(filename)
+        blocks = remove_return(blocks)
+        df = pd.DataFrame({'blocks': blocks})
+        df.iloc[0] = '\n' + df.iloc[0]
+        df = df.iloc[:-1]
+
+        check = df.iloc[0]['blocks']
+
+        df['block_onehot'] = df['blocks'].map(lambda x: inputs.vec_one_chunk_pandas(x))
+        vector_tabs = np.concatenate(df.block_onehot.values, axis=0)
+        return vector_tabs
+
+def remove_return(list_text):
+    if list_text[0].find('\r') != -1:
+        list_clean = []
+        for line in list_text:
+            list_clean.append(line.replace('\r', ''))
+    return list_clean
+
+
     # def vectorize_all_numpy(self, list_text, verbose=False):
     #     start = time.time()
     #     vt_all = None
@@ -154,6 +175,7 @@ def remove_uneven_chunks(list_text):
     '''
     ''' Flag uneven line lengths (within 6-string groupings) via pandas
     '''
+    list_text = remove_return(list_text)
     df = pd.DataFrame({'text': list_text})
     df.reset_index(drop=True, inplace=True)
     df['length'] = df.text.map(lambda x: len(x))
@@ -279,31 +301,31 @@ if __name__ == '__main__':
     % uneven =  0.0326520913694
     '''
 
+    '''
+    Create smaller cleaned input files
+    '''
+    # for i in xrange(18):
+    #     with open('../data/clean_mini_input' + str(i+1) + '.txt', 'w') as f:
+    #         for item in tabs[299999 * i:299999 * (i + 1)]:
+    #           f.write("%s" % item)
+    # i = 18
+    # with open('../data/clean_mini_input' + str(i+1) + '.txt', 'w') as f:
+    #     for item in tabs[299999 * i:]:
+    #       f.write("%s" % item)
 
-    # blocks = read_blocks('../data/input_clean.txt')
-    # df = pd.DataFrame({'blocks': blocks})
-    # df.iloc[0] = '\n' + df.iloc[0]
-    # df = df.iloc[:-1]
+    '''
+    Save 2D numpy vectorized one-hots for cleaned input files
 
-    # check = df.iloc[0]['blocks']
+    Data formatting issue present for the following files:
+    * clean_mini_input4.txt
+    * clean_mini_input10.txt
+    * clean_mini_input11.txt
+    * clean_mini_input.txt
+    '''
+    # tabs_vector = inputs.vec_from_file('../data/clean_mini_input14.txt')
+    # np.save('../data/clean14_np_mat.npy', tabs_vector)
 
-    # df['block_onehot'] = df['blocks'].map(lambda x: inputs.vec_one_chunk_pandas(x))
-    # vector_tabs = np.concatenate(df.block_onehot.values, axis=0)
-    # vector_tabs.dump('../data/mini_input_vector.dat')
-
-    # tabs_vector, _ = inputs.vectorize_all_numpy(tabs_clean, verbose=True)
     # tabs_vector.dump('tabs_vector.dat')
-
-
-    for i in xrange(18):
-        with open('../data/clean_mini_input' + str(i+1) + '.txt', 'w') as f:
-            for item in tabs[299999 * i:299999 * (i + 1)]:
-              f.write("%s" % item)
-
-    i = 18
-    with open('../data/clean_mini_input' + str(i+1) + '.txt', 'w') as f:
-        for item in tabs[299999 * i:]:
-          f.write("%s" % item)
 
 
     ''' Remove time steps where no note is played.  Currently too many blanks
