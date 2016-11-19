@@ -55,16 +55,10 @@ class ProcessInputs(object):
                 represent one-hot according to char_indices
         '''
         steps = len(list_text[0]) - 1
-        # vt = [[] for _ in xrange(steps)]
-
         np_dim = (steps, len(self.chars) * 6)
         vt = np.zeros(np_dim)
-
         for string_num in xrange(6):
             for i, char in enumerate(list_text[string_num][1:]):
-                # vectorize_char = np.zeros(len(self.chars), dtype=np.int)
-                # vectorize_char[self.char_indices[char]] = 1
-                # vt[i].extend(list(vectorize_char))
                 col_index_bump = (string_num) * len(self.chars)
                 vt[i, col_index_bump + self.char_indices[char]] = 1
         return vt
@@ -77,69 +71,44 @@ class ProcessInputs(object):
                 tab values, one for each of six strings E-B-G-D-A-E); columns
                 represent one-hot according to char_indices
         '''
-        # steps = len(str_block[0]) - 1
         len_row = str_block.find('\n',1)
         steps = len(str_block[2:len_row]) + 1 # Ignore initial '\n' & string name
-
         np_dim = (steps, len(self.chars) * 6)
         vt = np.zeros(np_dim)
-
         for string_num in xrange(6):
             lower = str_block.find('\n', string_num * len_row) + 2
             upper = str_block.find('\n', string_num * len_row + 1) + 1
-            # print "lower = ", lower
-            # print "upper = ", upper
-            # for i, char in enumerate(str_block[string_num][1:]):
             for i, char in enumerate(str_block[lower:upper]):
                 col_index_bump = (string_num) * len(self.chars)
                 vt[i, col_index_bump + self.char_indices[char]] = 1
         return vt
 
-    def vectorize_all_numpy(self, list_text, verbose=False):
-        start = time.time()
-        vt_all = None
-        i = 0
-        while len(list_text) >= 1 + i * 7:
-            if (list_text[0 + i * 7][0] == 'E') and \
-                                (list_text[1 + i * 7][0] == 'B'):
-                lower, upper = (0 + i * 7, 6 + i * 7)
-                vt_temp = self.vectorize_one_chunk_numpy(list_text[lower:upper])
-                if vt_all == None: # check if vt_all has all zeros
-                    vt_all = vt_temp # first tab chunk numpy array
-                else:
-                    vt_all = np.append(vt_all, vt_temp, axis=0) # more np arrays
-                if len(list_text[7 * i:]) < 7:
-                    break
-                else:
-                    # list_text = list_text[7:]
-                    i += 1
-                    if verbose:
-                        print 'Completed iteration #', i
-                    if len(list_text[7 * i:]) == 0:
-                        break
-            else:
-                break
-        end = time.time()
-        print "Time to run vectorize_all = ", (end - start)
-        return vt_all, (end - start)
-
-
-    def vec_one_line(self, single_line, verbose=False):
-        '''
-        INPUT: cleaned tabs list, SINGLE line (str)
-        OUTPUT: vectorized tabs, numpy 2D array
-        '''
-        line_vec = np.zeros((14, len(single_line[1:])))
-        for i, char in enumerate(single_line[1:]):
-            line_vec[i, self.char_indices[char]] = 1
-        return line_vec
-
-    def vec_one_block():
-        pass
-
-    def vec_all_lines():
-        # loop through the BLOCKS, pass a block
-        pass
+    # def vectorize_all_numpy(self, list_text, verbose=False):
+    #     start = time.time()
+    #     vt_all = None
+    #     i = 0
+    #     while len(list_text) >= 1 + i * 7:
+    #         if (list_text[0 + i * 7][0] == 'E') and \
+    #                             (list_text[1 + i * 7][0] == 'B'):
+    #             lower, upper = (0 + i * 7, 6 + i * 7)
+    #             vt_temp = self.vectorize_one_chunk_numpy(list_text[lower:upper])
+    #             if vt_all == None: # check if vt_all has all zeros
+    #                 vt_all = vt_temp # first tab chunk numpy array
+    #             else:
+    #                 vt_all = np.append(vt_all, vt_temp, axis=0) # more np arrays
+    #             if len(list_text[7 * i:]) < 7:
+    #                 break
+    #             else:
+    #                 i += 1
+    #                 if verbose:
+    #                     print 'Completed iteration #', i
+    #                 if len(list_text[7 * i:]) == 0:
+    #                     break
+    #         else:
+    #             break
+    #     end = time.time()
+    #     print "Time to run vectorize_all = ", (end - start)
+    #     return vt_all, (end - start)
 
 
 def check_line_len_uniform(list_text, verbose=False): # SLOW, procedural list format
@@ -183,10 +152,11 @@ def remove_uneven_chunks(list_text):
     INPUT: list of text, lines of guitar tabs
     OUTPUT: list of text, lines of guitar tabs (cleaned)
     '''
-    # Attempt to flag uneven line lengths (within 6-string groupings) via pandas
+    ''' Flag uneven line lengths (within 6-string groupings) via pandas
+    '''
     df = pd.DataFrame({'text': list_text})
     df.reset_index(drop=True, inplace=True)
-    df['length'] = df.text.apply(lambda x: len(x))
+    df['length'] = df.text.map(lambda x: len(x))
     df.length = df.length * 1.
     df['num'] = df.index + 1.
 
@@ -272,7 +242,7 @@ def write_to_txt(list_text, filename):
         for line in list_text:
             f.write(line)
 
-def read_blocks_from_txt(filename):
+def read_blocks(filename):
     with open(filename) as f:
         txt = f.read()
     blocks = re.split('%', txt)
@@ -280,17 +250,18 @@ def read_blocks_from_txt(filename):
 
 
 if __name__ == '__main__':
+
+    ''' Clean inputs.txt
+    * Remove tab clusters with uneven line lengths (within 6-string groupings)
+    * Write cleaned input to 'input_clean.txt'
+    '''
     inputs = ProcessInputs('../data/input.txt')
+    # tabs = inputs.gen_list()
+    # tabs_clean = remove_uneven_chunks(tabs[6:]) # 1st grp missing line
+    # write_to_txt(tabs_clean, 'input_clean')
+
     # inputs = ProcessInputs('../data/skyrim_repeat.txt')
     # tabs = inputs.gen_list()
-
-    # tabs[0] = tabs[0][7:] # remove random symbols from first line
-    # two = tabs[6:12]
-
-    # group = tabs[6:27]
-    # mini = tabs[:48]
-
-    # vt_group = inputs.vectorize_all(tabs[6:1000005])
 
     ''' Check if there are six lines of tabs between each '%' row
     '''
@@ -308,24 +279,8 @@ if __name__ == '__main__':
     % uneven =  0.0326520913694
     '''
 
-    ''' Attempt to flag uneven line lengths (within 6-string groupings) via
-    pandas
-    '''
-    # tabs_clean = remove_uneven_chunks(tabs[6:])
-    # write_to_txt(tabs_clean, 'input_clean')
 
-
-    '''
-    Create clean mini_input file
-    '''
-    # inputs = ProcessInputs('../data/mini_input.txt')
-    # tabs = inputs.gen_list()
-    # tabs_clean = remove_uneven_chunks(tabs[6:299998])
-    # write_to_txt(tabs_clean, 'mini_input_clean')
-
-    # blocks = read_blocks_from_txt('../data/input_clean.txt')
-    # blocks = read_blocks_from_txt('../data/mini_input_clean.txt')
-
+    # blocks = read_blocks('../data/input_clean.txt')
     # df = pd.DataFrame({'blocks': blocks})
     # df.iloc[0] = '\n' + df.iloc[0]
     # df = df.iloc[:-1]
