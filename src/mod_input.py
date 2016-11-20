@@ -327,4 +327,4 @@ if __name__ == '__main__':
     Write to text file
     '''
     flat_list = flatten_from_file('../data/input_clean.txt')
-    write_to_txt(flat_list, 'flat_tabs_clean.txt')
+    write_to_txt(flat_list, 'flat_tabs_clean')
