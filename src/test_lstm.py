@@ -23,8 +23,9 @@ Using base LSTM text generation example from Keras repo
 '''
 
 # path = get_file('nietzsche.txt', origin="https://s3.amazonaws.com/text-datasets/nietzsche.txt")
-# path = '../data/mini_input.txt'
-path = '../data/skyrim_repeat.txt'
+# path = 'flat_tabs_clean.txt'
+# path = '../data/flat_tabs_clean.txt'
+path = 'flat_tabs_mini1.txt'
 text = open(path).read().lower()
 print('corpus length:', len(text))
 
@@ -74,11 +75,12 @@ def sample(preds, temperature=1.0):
     return np.argmax(probas)
 
 # train the model, output generated text after each iteration
-for iteration in range(1, 60):
+for iteration in range(1, 2):
+# for iteration in range(1, 60):
     print()
     print('-' * 50)
     print('Iteration', iteration)
-    model.fit(X, y, batch_size=128, nb_epoch=1)
+    model.fit(X, y, batch_size=128, nb_epoch=20)
 
     start_index = random.randint(0, len(text) - maxlen - 1)
 

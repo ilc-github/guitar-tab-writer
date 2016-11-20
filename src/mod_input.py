@@ -328,3 +328,11 @@ if __name__ == '__main__':
     '''
     flat_list = flatten_from_file('../data/input_clean.txt')
     write_to_txt(flat_list, 'flat_tabs_clean')
+
+    temp = None
+    with open('../data/flat_tabs_clean.txt') as f:
+        # for line in f:
+        #     temp.append(line)
+        temp = f.read()
+    with open('../data/flat_tabs_mini1.txt', 'w') as f:
+        f.write(temp[:70000364])
