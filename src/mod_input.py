@@ -11,15 +11,6 @@ import re
  class imbalances)
 '''
 
-# with open(path_write_mini, 'w') as f:
-#     for item in ans[:300000]:
-#       f.write("%s" % item)
-
-# with open('mini_1mb_input.txt', 'w') as f:
-#     for item in ans[:15000]:
-#       f.write("%s" % item)
-
-
 
 class ProcessInputs(object):
 
@@ -83,18 +74,29 @@ class ProcessInputs(object):
                 vt[i, col_index_bump + self.char_indices[char]] = 1
         return vt
 
-    def vec_from_file(self, filename):
-        blocks = read_blocks(filename)
-        blocks = remove_return(blocks)
-        df = pd.DataFrame({'blocks': blocks})
-        df.iloc[0] = '\n' + df.iloc[0]
-        df = df.iloc[:-1]
+def vec_from_file(filename):
+    blocks = read_blocks(filename)
+    blocks = remove_return(blocks)
+    df = pd.DataFrame({'blocks': blocks})
+    df.iloc[0] = '\n' + df.iloc[0]
+    df = df.iloc[:-1]
 
-        check = df.iloc[0]['blocks']
+    check = df.iloc[0]['blocks']
 
-        df['block_onehot'] = df['blocks'].map(lambda x: inputs.vec_one_chunk_pandas(x))
-        vector_tabs = np.concatenate(df.block_onehot.values, axis=0)
-        return vector_tabs
+    df['block_onehot'] = df['blocks'].map(lambda x: inputs.vec_one_chunk_pandas(x))
+    vector_tabs = np.concatenate(df.block_onehot.values, axis=0)
+    return vector_tabs
+
+def flatten_from_file(filename):
+    blocks = read_blocks(filename)
+    blocks = remove_return(blocks)
+    df = pd.DataFrame({'blocks': blocks})
+    df.iloc[0] = '\n' + df.iloc[0]
+    df = df.iloc[:-1]
+
+    df['flat'] = df['blocks'].map(lambda x: flatten_text(x))
+    list_text = list(df[df['flat'] != '']['flat'])
+    return list_text
 
 def remove_return(list_text):
     if list_text[0].find('\r') != -1:
@@ -102,34 +104,6 @@ def remove_return(list_text):
         for line in list_text:
             list_clean.append(line.replace('\r', ''))
     return list_clean
-
-
-    # def vectorize_all_numpy(self, list_text, verbose=False):
-    #     start = time.time()
-    #     vt_all = None
-    #     i = 0
-    #     while len(list_text) >= 1 + i * 7:
-    #         if (list_text[0 + i * 7][0] == 'E') and \
-    #                             (list_text[1 + i * 7][0] == 'B'):
-    #             lower, upper = (0 + i * 7, 6 + i * 7)
-    #             vt_temp = self.vectorize_one_chunk_numpy(list_text[lower:upper])
-    #             if vt_all == None: # check if vt_all has all zeros
-    #                 vt_all = vt_temp # first tab chunk numpy array
-    #             else:
-    #                 vt_all = np.append(vt_all, vt_temp, axis=0) # more np arrays
-    #             if len(list_text[7 * i:]) < 7:
-    #                 break
-    #             else:
-    #                 i += 1
-    #                 if verbose:
-    #                     print 'Completed iteration #', i
-    #                 if len(list_text[7 * i:]) == 0:
-    #                     break
-    #         else:
-    #             break
-    #     end = time.time()
-    #     print "Time to run vectorize_all = ", (end - start)
-    #     return vt_all, (end - start)
 
 
 def check_line_len_uniform(list_text, verbose=False): # SLOW, procedural list format
@@ -215,7 +189,7 @@ def remove_blanks(list_text): # remove time steps where no notes are playing (re
     '''
     pass
 
-def flatten_text(list_text):
+def flatten_text(str_block):
     '''
     Rearrange input tab text from the following format:
 
@@ -230,10 +204,25 @@ def flatten_text(list_text):
 
     '||||||.------.---0--.-1----.------.--2---.------.||||||.\n\n\n\n\n\n'
 
-    INPUT: list of text, lines of guitar tabs
-    OUTPUT: list of text, lines of guitar tabs, flattened
+    INPUT: single string of guitar tabs (6-line chunk)
+    OUTPUT: single string, flattened text
     '''
-    pass
+    len_row = str_block.find('\n',1)
+    lines = []
+    for string_num in xrange(6):
+        lower = str_block.find('\n', string_num * len_row) + 2
+        upper = str_block.find('\n', string_num * len_row + 1) + 1
+        lines.append(str_block[lower:upper])
+    flat_txt = ''
+    try:
+        for i in xrange(len_row - 1):
+            for string_num in xrange(6):
+                flat_txt += lines[string_num][i]
+            flat_txt += '.'
+        return flat_txt
+    except IndexError:
+        return ''
+
 
 def check_six_rows(list_text):
     '''
@@ -322,7 +311,7 @@ if __name__ == '__main__':
     * clean_mini_input11.txt
     * clean_mini_input.txt
     '''
-    # tabs_vector = inputs.vec_from_file('../data/clean_mini_input14.txt')
+    # tabs_vector = vec_from_file('../data/clean_mini_input14.txt')
     # np.save('../data/clean14_np_mat.npy', tabs_vector)
 
     # tabs_vector.dump('tabs_vector.dat')
@@ -332,3 +321,10 @@ if __name__ == '__main__':
     (i.e. '-' values).
     '''
     # remove_blanks(tabs)
+
+    '''
+    Transform one block into alt text layout (flat text)
+    Write to text file
+    '''
+    flat_list = flatten_from_file('../data/input_clean.txt')
+    write_to_txt(flat_list, 'flat_tabs_clean.txt')
