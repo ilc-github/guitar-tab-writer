@@ -9,6 +9,7 @@ has at least ~100k characters. ~1M is better.
 
 from __future__ import print_function
 from keras.models import Sequential
+from keras.callbacks import ModelCheckpoint
 from keras.layers import Dense, Activation, Dropout
 from keras.layers import LSTM
 from keras.optimizers import RMSprop
@@ -25,7 +26,8 @@ Using base LSTM text generation example from Keras repo
 # path = get_file('nietzsche.txt', origin="https://s3.amazonaws.com/text-datasets/nietzsche.txt")
 # path = 'flat_tabs_clean.txt'
 # path = '../data/flat_tabs_clean.txt'
-path = 'flat_tabs_mini1.txt'
+# path = 'flat_tabs_mini1.txt'
+path = '../data/flat_tabs_nb1.txt'
 text = open(path).read().lower()
 print('corpus length:', len(text))
 
@@ -74,13 +76,26 @@ def sample(preds, temperature=1.0):
     probas = np.random.multinomial(1, preds, 1)
     return np.argmax(probas)
 
+checkpoint = ModelCheckpoint( \
+                filepath='weights-{epoch:02d}-{loss:.2f}.hdf5', \
+                monitor='loss', verbose=0, save_best_only=False, \
+                save_weights_only=False, mode='auto')
+
+# checkpoint = ModelCheckpoint( \
+#                 filepath='weights-{epoch:02d}-{val_loss:.2f}.hdf5', \
+#                 monitor='val_loss', verbose=0, save_best_only=False, \
+#                 save_weights_only=False, mode='auto')
+
+
+
+
 # train the model, output generated text after each iteration
 for iteration in range(1, 2):
 # for iteration in range(1, 60):
     print()
     print('-' * 50)
     print('Iteration', iteration)
-    model.fit(X, y, batch_size=128, nb_epoch=20)
+    # model.fit(X, y, batch_size=128, nb_epoch=20, callbacks=[checkpoint])
 
     start_index = random.randint(0, len(text) - maxlen - 1)
 
@@ -94,7 +109,7 @@ for iteration in range(1, 2):
         print('----- Generating with seed: "' + sentence + '"')
         sys.stdout.write(generated)
 
-        for i in range(400):
+        for i in range(800):
             x = np.zeros((1, maxlen, len(chars)))
             for t, char in enumerate(sentence):
                 x[0, t, char_indices[char]] = 1.
@@ -109,3 +124,5 @@ for iteration in range(1, 2):
             sys.stdout.write(next_char)
             sys.stdout.flush()
 print()
+
+# model2.load_weights('weights-19-0.11.hdf5')

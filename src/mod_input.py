@@ -179,16 +179,6 @@ def remove_uneven_chunks(list_text):
     df_new = df_new[df_new.drop_flag == 0]
     return list(df_new.text)
 
-
-def remove_blanks(list_text): # remove time steps where no notes are playing (reduce number of '-' throughout tab inputs)
-    '''
-    Remove time steps where no notes are playing.  Reduce number of '-'
-    throughout tab inputs--produce less sparse input.
-    INPUT: list of text, lines of guitar tabs
-    OUTPUT: list of text, lines of guitar tabs
-    '''
-    pass
-
 def flatten_text(str_block):
     '''
     Rearrange input tab text from the following format:
@@ -223,6 +213,34 @@ def flatten_text(str_block):
     except IndexError:
         return ''
 
+def remove_blanks_all(list_text):
+    '''
+    Reduce number of '-' throughout tab inputs to produce less sparse input.
+    Remove time steps where no notes are playing--only if repeated groups of
+    '------.' values.  Will not remove isolated single instaces of '------.'
+    (i.e. a note plays before and after this group of dash values).
+    INPUT: list of text, lines of guitar tabs
+    OUTPUT: list of text, lines of guitar tabs
+    '''
+    list_clean = []
+    for line in list_text:
+        list_clean.append(remove_blanks_one(line))
+    return list_clean
+
+def remove_blanks_one(flat_string):
+    '''
+    Reduce number of '-' throughout tab inputs to produce less sparse input.
+    Remove time steps where no notes are playing--only if repeated groups of
+    '------.' values.  Will not remove isolated single instaces of '------.'
+    (i.e. a note plays before and after this group of dash values).
+    INPUT: single string, flattened text
+    OUTPUT: single string, flattened text
+    '''
+    find_str = '------.------.'
+    replace_str = '------.'
+    while flat_string.find(find_str) != -1:
+        flat_string = flat_string.replace(find_str, replace_str)
+    return flat_string
 
 def check_six_rows(list_text):
     '''
@@ -329,10 +347,24 @@ if __name__ == '__main__':
     flat_list = flatten_from_file('../data/input_clean.txt')
     write_to_txt(flat_list, 'flat_tabs_clean')
 
-    temp = None
-    with open('../data/flat_tabs_clean.txt') as f:
-        # for line in f:
-        #     temp.append(line)
-        temp = f.read()
-    with open('../data/flat_tabs_mini1.txt', 'w') as f:
-        f.write(temp[:70000364])
+    flat_list2 = remove_blanks_all(flat_list)
+    write_to_txt(flat_list2, 'flat_tabs_clean_nb')
+
+
+
+    ''' Write flat to text file
+    '''
+    # temp = None
+    # with open('../data/flat_tabs_clean.txt') as f:
+    #     temp = f.read()
+    # with open('../data/flat_tabs_mini1.txt', 'w') as f:
+    #     # f.write(temp[:70000364])
+    #     f.write(temp[:20000015])
+
+    ''' Write flat + removed consecutive blanks to text file
+    '''
+    # temp = None
+    # with open('../data/flat_tabs_clean_nb.txt') as f:
+    #     temp = f.read()
+    # with open('../data/flat_tabs_nb1.txt', 'w') as f:
+    #     f.write(temp[:20000169])
