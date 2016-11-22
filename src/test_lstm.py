@@ -17,6 +17,17 @@ from keras.utils.data_utils import get_file
 import numpy as np
 import random
 import sys
+import os
+
+
+if len(sys.argv) < 2:
+    sys.exit('Usage: %s flat_tab_input.txt' % sys.argv[0])
+
+if not os.path.exists(sys.argv[1]):
+    sys.exit('ERROR: flat_tab_input.txt %s was not found!' % sys.argv[1])
+
+text_filepath = sys.argv[1]
+
 
 
 '''
@@ -27,7 +38,8 @@ Using base LSTM text generation example from Keras repo
 # path = 'flat_tabs_clean.txt'
 # path = '../data/flat_tabs_clean.txt'
 # path = 'flat_tabs_mini1.txt'
-path = '../data/flat_tabs_nb1.txt'
+# path = '../data/flat_tabs_nb1.txt'
+path = text_filepath
 text = open(path).read().lower()
 print('corpus length:', len(text))
 
@@ -62,9 +74,9 @@ model.add(LSTM(128, input_shape=(maxlen, len(chars))))
 model.add(Dense(len(chars)))
 model.add(Activation('softmax'))
 
-# optimizer = RMSprop(lr=0.01)
-# model.compile(loss='categorical_crossentropy', optimizer=optimizer)
-model.compile(loss='categorical_crossentropy', optimizer='adam')
+optimizer = RMSprop(lr=0.01)
+model.compile(loss='categorical_crossentropy', optimizer=optimizer)
+# model.compile(loss='categorical_crossentropy', optimizer='adam')
 
 
 def sample(preds, temperature=1.0):
@@ -78,7 +90,7 @@ def sample(preds, temperature=1.0):
 
 checkpoint = ModelCheckpoint( \
                 filepath='weights-{epoch:02d}-{loss:.2f}.hdf5', \
-                monitor='loss', verbose=0, save_best_only=False, \
+                monitor='loss', verbose=0, save_best_only=True, \
                 save_weights_only=False, mode='auto')
 
 # checkpoint = ModelCheckpoint( \
@@ -87,19 +99,17 @@ checkpoint = ModelCheckpoint( \
 #                 save_weights_only=False, mode='auto')
 
 
-
-
 # train the model, output generated text after each iteration
 for iteration in range(1, 2):
 # for iteration in range(1, 60):
     print()
     print('-' * 50)
     print('Iteration', iteration)
-    # model.fit(X, y, batch_size=128, nb_epoch=20, callbacks=[checkpoint])
+    model.fit(X, y, batch_size=128, nb_epoch=800, callbacks=[checkpoint])
 
     start_index = random.randint(0, len(text) - maxlen - 1)
 
-    for diversity in [0.2, 0.5, 1.0, 1.2]:
+    for diversity in [0.2, 0.5, 1.0, 1.2, 2.0, 3.0, 5.0]:
         print()
         print('----- diversity:', diversity)
 
@@ -109,7 +119,7 @@ for iteration in range(1, 2):
         print('----- Generating with seed: "' + sentence + '"')
         sys.stdout.write(generated)
 
-        for i in range(800):
+        for i in range(1500):
             x = np.zeros((1, maxlen, len(chars)))
             for t, char in enumerate(sentence):
                 x[0, t, char_indices[char]] = 1.
@@ -124,5 +134,3 @@ for iteration in range(1, 2):
             sys.stdout.write(next_char)
             sys.stdout.flush()
 print()
-
-# model2.load_weights('weights-19-0.11.hdf5')
