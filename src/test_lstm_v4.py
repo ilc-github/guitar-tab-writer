@@ -12,7 +12,6 @@ from keras.models import Sequential
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Dense, Activation, Dropout
 from keras.layers import LSTM
-from keras.layers.wrappers import TimeDistributed
 from keras.optimizers import RMSprop
 from keras.utils.data_utils import get_file
 import numpy as np
@@ -71,7 +70,6 @@ for i, sentence in enumerate(sentences):
 # build the model: a single LSTM
 print('Build model...')
 model = Sequential()
-model.add(LSTM(128, input_shape=(maxlen, len(chars)), return_sequences=True))
 model.add(LSTM(128, input_shape=(maxlen, len(chars))))
 model.add(Dense(len(chars)))
 model.add(Activation('softmax'))
@@ -107,12 +105,11 @@ for iteration in range(1, 2):
     print()
     print('-' * 50)
     print('Iteration', iteration)
-    # model.fit(X, y, batch_size=128, nb_epoch=800, callbacks=[checkpoint])
-    model.fit(X, y, batch_size=128, nb_epoch=10000, callbacks=[checkpoint])
+    model.fit(X, y, batch_size=128, nb_epoch=800, callbacks=[checkpoint])
 
     start_index = random.randint(0, len(text) - maxlen - 1)
 
-    for diversity in [0.2, 0.5, 1.0, 1.2, 2.0, 3.0, 5.0]:
+    for diversity in [0.2, 0.5, 1.0, 1.2, 2.0, 3.0]:
         print()
         print('----- diversity:', diversity)
 
