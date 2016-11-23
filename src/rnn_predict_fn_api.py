@@ -19,16 +19,22 @@ import numpy as np
 import random
 import sys
 import os
+'''
+******NOTE****** need to re-do (lstm_fn_api.py base has changed)
+'''
 
-
-if len(sys.argv) < 2:
-    sys.exit('Usage: %s flat_tab_input.txt' % sys.argv[0])
+if len(sys.argv) < 3:
+    sys.exit('Usage: %s weights-filepath.hdf5 flat_tab_input.txt' % sys.argv[0])
 
 if not os.path.exists(sys.argv[1]):
-    sys.exit('ERROR: flat_tab_input.txt %s was not found!' % sys.argv[1])
+    sys.exit('ERROR: Weights-filepath.hdf5 %s was not found!' % sys.argv[1])
+elif not os.path.exists(sys.argv[1]):
+    sys.exit('ERROR: flat_tab_input.txt %s was not found!' % sys.argv[2])
 
-text_filepath = sys.argv[1]
+weights_filepath = sys.argv[1]
+flat_tab_filepath = sys.argv[2]
 
+path = flat_tab_filepath
 
 
 '''
@@ -50,7 +56,7 @@ def prep_flat_nb(filepath):
     return string1, string2, string3, string4, string5, string6
 
 # s1, s2, s3, s4, s5, s6 = prep_flat_nb('../data/flat_skyrim_nb.txt')
-s1, s2, s3, s4, s5, s6 = prep_flat_nb(text_filepath)
+s1, s2, s3, s4, s5, s6 = prep_flat_nb(path)
 # path = text_filepath
 # text = open(path).read().lower()
 
@@ -64,33 +70,6 @@ print('total chars:', num_chars)
 char_indices = dict((c, i) for i, c in enumerate(chars))
 indices_char = dict((i, c) for i, c in enumerate(chars))
 
-def vectorize(string_txt, maxlen=40, step=3):
-    '''
-    INPUT: string containing tab characters for 1 guitar string
-    OUTPUT: 3d numpy array (vectorized X), 2d numpy array (vectorized y)
-    '''
-    # cut the text in semi-redundant sequences of maxlen characters
-    timesteps = []
-    next_chars = []
-    for i in range(0, len(string_txt) - maxlen, step):
-        timesteps.append(string_txt[i: i + maxlen])
-        next_chars.append(string_txt[i + maxlen])
-
-    # Vectorization
-    X = np.zeros((len(timesteps), maxlen, len(chars)), dtype=np.bool)
-    y = np.zeros((len(timesteps), len(chars)), dtype=np.bool)
-    for i, timestep in enumerate(timesteps):
-        for t, char in enumerate(timestep):
-            X[i, t, char_indices[char]] = 1
-        y[i, char_indices[next_chars[i]]] = 1
-    return X, y
-
-X1, y1 = vectorize(s1)
-X2, y2 = vectorize(s2)
-X3, y3 = vectorize(s3)
-X4, y4 = vectorize(s4)
-X5, y5 = vectorize(s5)
-X6, y6 = vectorize(s6)
 
 ''' Set maxlen
 '''
@@ -130,21 +109,7 @@ optimizer = RMSprop(lr=0.01)
 model.compile(optimizer=optimizer, loss='categorical_crossentropy', \
               loss_weights=[1., 1., 1., 1., 1., 1.])
 
-fit_X = [X1, X2, X3, X4, X5, X6]
-fit_label = [y1, y2, y3, y4, y5, y6]
-
-# ''' build the model: a single LSTM
-# '''
-# print('Build model...')
-# model = Sequential()
-# model.add(LSTM(128, input_shape=(maxlen, len(chars)), return_sequences=True))
-# model.add(LSTM(128, input_shape=(maxlen, len(chars))))
-# model.add(Dense(len(chars)))
-# model.add(Activation('softmax'))
-#
-# optimizer = RMSprop(lr=0.01)
-# model.compile(loss='categorical_crossentropy', optimizer=optimizer)
-
+model.load_weights(weights_filepath)
 
 def sample(preds, temperature=1.0):
     # helper function to sample an index from a probability array
@@ -155,31 +120,19 @@ def sample(preds, temperature=1.0):
     probas = np.random.multinomial(1, preds, 1)
     return np.argmax(probas)
 
-checkpoint = ModelCheckpoint( \
-                filepath='weights-{epoch:02d}-{loss:.2f}.hdf5', \
-                monitor='loss', verbose=0, save_best_only=True, \
-                save_weights_only=False, mode='auto')
 
-# checkpoint = ModelCheckpoint( \
-#                 filepath='weights-{epoch:02d}-{val_loss:.2f}.hdf5', \
-#                 monitor='val_loss', verbose=0, save_best_only=False, \
-#                 save_weights_only=False, mode='auto')
-
-
-# train the model, output generated text after each iteration
 for iteration in range(1, 2):
 # for iteration in range(1, 60):
     print()
     print('-' * 50)
     print('Iteration', iteration)
-    # model.fit(X, y, batch_size=128, nb_epoch=800, callbacks=[checkpoint])
-    model.fit(fit_X, fit_label, batch_size=128, nb_epoch=800, \
-                                            callbacks=[checkpoint])
+    # model.fit(fit_X, fit_label, batch_size=128, nb_epoch=800, \
+    #                                         callbacks=[checkpoint])
 
     start_index = random.randint(0, len(text) - maxlen - 1)
     output_text = ''
     for diversity in [0.2, 0.5, 1.0, 1.2, 2.0, 3.0, 5.0]:
-        output_text += '\n'
+        output_text = '\n'
         output_text += '----- diversity:' + str(diversity) + '\n'
 
         generated1 = ''
@@ -188,18 +141,18 @@ for iteration in range(1, 2):
         generated4 = ''
         generated5 = ''
         generated6 = ''
-        s1_timestep = s1[start_index: start_index + maxlen]
-        s2_timestep = s2[start_index: start_index + maxlen]
-        s3_timestep = s3[start_index: start_index + maxlen]
-        s4_timestep = s4[start_index: start_index + maxlen]
-        s5_timestep = s5[start_index: start_index + maxlen]
-        s6_timestep = s6[start_index: start_index + maxlen]
+        s1_timestep = text[start_index: start_index + maxlen]
+        s2_timestep = text[start_index: start_index + maxlen]
+        s3_timestep = text[start_index: start_index + maxlen]
+        s4_timestep = text[start_index: start_index + maxlen]
+        s5_timestep = text[start_index: start_index + maxlen]
+        s6_timestep = text[start_index: start_index + maxlen]
         generated1 += s1_timestep
-        generated2 += s2_timestep
-        generated3 += s3_timestep
-        generated4 += s4_timestep
-        generated5 += s5_timestep
-        generated6 += s6_timestep
+        generated2 += s1_timestep
+        generated3 += s1_timestep
+        generated4 += s1_timestep
+        generated5 += s1_timestep
+        generated6 += s1_timestep
         # print('----- Generating with seed (string 1): "' + s1_timestep + '"')
         output_text += '----- Generating with seed (string 1): "' + \
                                                     s1_timestep + '"' + '\n'
@@ -225,8 +178,8 @@ for iteration in range(1, 2):
                                                     s6_timestep + '"' + '\n'
         # sys.stdout.write(generated6)
 
-        # tab_chunk = ''
-        for i in range(200):
+        tab_chunk = ''
+        for i in range(50):
             x1 = np.zeros((1, maxlen, len(chars)))
             x2 = np.zeros((1, maxlen, len(chars)))
             x3 = np.zeros((1, maxlen, len(chars)))
@@ -235,15 +188,15 @@ for iteration in range(1, 2):
             x6 = np.zeros((1, maxlen, len(chars)))
             for t, char in enumerate(s1_timestep):
                 x1[0, t, char_indices[char]] = 1.
-            for t, char in enumerate(s2_timestep):
+            for t, char in enumerate(s1_timestep):
                 x2[0, t, char_indices[char]] = 1.
-            for t, char in enumerate(s3_timestep):
+            for t, char in enumerate(s1_timestep):
                 x3[0, t, char_indices[char]] = 1.
-            for t, char in enumerate(s4_timestep):
+            for t, char in enumerate(s1_timestep):
                 x4[0, t, char_indices[char]] = 1.
-            for t, char in enumerate(s5_timestep):
+            for t, char in enumerate(s1_timestep):
                 x5[0, t, char_indices[char]] = 1.
-            for t, char in enumerate(s6_timestep):
+            for t, char in enumerate(s1_timestep):
                 x6[0, t, char_indices[char]] = 1.
 
             pred_x = [x1, x2, x3, x4, x5, x6]
@@ -274,9 +227,9 @@ for iteration in range(1, 2):
             s4_timestep = s4_timestep[1:] + next_char4
             s5_timestep = s5_timestep[1:] + next_char5
             s6_timestep = s6_timestep[1:] + next_char6
-            output_text += next_char1 + next_char2 + next_char3 + next_char4 + \
+            tab_chunk += next_char1 + next_char2 + next_char3 + next_char4 + \
                                         next_char5 + next_char6 + '.'
-        # output_text += tab_chunk
+        output_text += tab_chunk
 
             # sys.stdout.write(next_char1)
             # sys.stdout.write(next_char2)
