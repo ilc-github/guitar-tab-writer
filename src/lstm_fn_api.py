@@ -177,12 +177,12 @@ for iteration in range(1, 2):
     print('-' * 50)
     print('Iteration', iteration)
     # model.fit(X, y, batch_size=128, nb_epoch=800, callbacks=[checkpoint])
-    # model.fit(fit_X, fit_label, batch_size=1024, nb_epoch=800, \
-    #                                         callbacks=[checkpoint])
-    model.fit(fit_X, fit_label, batch_size=1024, nb_epoch=800)
-    model.save('model_fn_api_skyrim.h5')
+    model.fit(fit_X, fit_label, batch_size=2048, nb_epoch=800, \
+                                            callbacks=[checkpoint])
+    # model.fit(fit_X, fit_label, batch_size=1024, nb_epoch=800)
+    # model.save('model_fn_api_skyrim.h5')
 
-    start_index = random.randint(0, len(text) - maxlen - 1)
+    start_index = random.randint(0, len(s1) - maxlen - 1)
     output_text = ''
     for diversity in [0.2, 0.5, 1.0, 1.2, 2.0, 3.0, 5.0, 100.0, 1000.0, 100000.0]:
         output_text += '\n'
@@ -211,23 +211,23 @@ for iteration in range(1, 2):
                                                     s1_timestep + '"' + '\n'
         # sys.stdout.write(generated1)
         # print('----- Generating with seed (string 2): "' + s2_timestep + '"')
-        output_text += '----- Generating with seed (string 1): "' + \
+        output_text += '----- Generating with seed (string 2): "' + \
                                                     s2_timestep + '"' + '\n'
         # sys.stdout.write(generated2)
         # print('----- Generating with seed (string 3): "' + s3_timestep + '"')
-        output_text += '----- Generating with seed (string 1): "' + \
+        output_text += '----- Generating with seed (string 3): "' + \
                                                     s3_timestep + '"' + '\n'
         # sys.stdout.write(generated3)
         # print('----- Generating with seed (string 4): "' + s4_timestep + '"')
-        output_text += '----- Generating with seed (string 1): "' + \
+        output_text += '----- Generating with seed (string 4): "' + \
                                                     s4_timestep + '"' + '\n'
         # sys.stdout.write(generated4)
         # print('----- Generating with seed (string 5): "' + s5_timestep + '"')
-        output_text += '----- Generating with seed (string 1): "' + \
+        output_text += '----- Generating with seed (string 5): "' + \
                                                     s5_timestep + '"' + '\n'
         # sys.stdout.write(generated5)
         # print('----- Generating with seed (string 6): "' + s6_timestep + '"')
-        output_text += '----- Generating with seed (string 1): "' + \
+        output_text += '----- Generating with seed (string 6): "' + \
                                                     s6_timestep + '"' + '\n'
         # sys.stdout.write(generated6)
 

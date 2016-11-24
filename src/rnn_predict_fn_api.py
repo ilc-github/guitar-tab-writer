@@ -8,7 +8,7 @@ has at least ~100k characters. ~1M is better.
 '''
 
 from __future__ import print_function
-from keras.models import Sequential, Model
+from keras.models import Sequential, Model, load_model
 from keras.callbacks import ModelCheckpoint
 from keras.layers import Input, Dense, Activation, Dropout
 from keras.layers import LSTM, Embedding, merge
@@ -19,19 +19,18 @@ import numpy as np
 import random
 import sys
 import os
-'''
-******NOTE****** need to re-do (lstm_fn_api.py base has changed)
-'''
+
+
 
 if len(sys.argv) < 3:
-    sys.exit('Usage: %s weights-filepath.hdf5 flat_tab_input.txt' % sys.argv[0])
+    sys.exit('Usage: %s Model-filepath.h5 flat_tab_input.txt' % sys.argv[0])
 
 if not os.path.exists(sys.argv[1]):
-    sys.exit('ERROR: Weights-filepath.hdf5 %s was not found!' % sys.argv[1])
+    sys.exit('ERROR: Model-filepath.h5 %s was not found!' % sys.argv[1])
 elif not os.path.exists(sys.argv[1]):
     sys.exit('ERROR: flat_tab_input.txt %s was not found!' % sys.argv[2])
 
-weights_filepath = sys.argv[1]
+model_filepath = sys.argv[1]
 flat_tab_filepath = sys.argv[2]
 
 path = flat_tab_filepath
@@ -77,39 +76,48 @@ maxlen = 40
 
 # Build model using functional API
 # inputs: receive sequences of 40 integers,
-print('Build model via functional API...')
-str_1 = Input(shape=(maxlen, num_chars))
-str_2 = Input(shape=(maxlen, num_chars))
-str_3 = Input(shape=(maxlen, num_chars))
-str_4 = Input(shape=(maxlen, num_chars))
-str_5 = Input(shape=(maxlen, num_chars))
-str_6 = Input(shape=(maxlen, num_chars))
+print('Loading model via model save file...')
+# str_1 = Input(shape=(maxlen, num_chars), name='input_1') # name these, will show up in summary
+# str_2 = Input(shape=(maxlen, num_chars), name='input_2')
+# str_3 = Input(shape=(maxlen, num_chars), name='input_3')
+# str_4 = Input(shape=(maxlen, num_chars), name='input_4')
+# str_5 = Input(shape=(maxlen, num_chars), name='input_5')
+# str_6 = Input(shape=(maxlen, num_chars), name='input_6')
+#
+# shared_lstm_1 = LSTM(128, return_sequences=True)
+#
+# encoded_str1_ = shared_lstm_1(str_1)
+# encoded_str2_ = shared_lstm_1(str_2)
+# encoded_str3_ = shared_lstm_1(str_3)
+# encoded_str4_ = shared_lstm_1(str_4)
+# encoded_str5_ = shared_lstm_1(str_5)
+# encoded_str6_ = shared_lstm_1(str_6)
+#
+# shared_lstm_2 = LSTM(128)
+#
+# encoded_str1 = shared_lstm_2(encoded_str1_)
+# encoded_str2 = shared_lstm_2(encoded_str2_)
+# encoded_str3 = shared_lstm_2(encoded_str3_)
+# encoded_str4 = shared_lstm_2(encoded_str4_)
+# encoded_str5 = shared_lstm_2(encoded_str5_)
+# encoded_str6 = shared_lstm_2(encoded_str6_)
+#
+# output_str1 = Dense(len(chars), activation='softmax', name='output_str1')(encoded_str1)
+# output_str2 = Dense(len(chars), activation='softmax', name='output_str2')(encoded_str2)
+# output_str3 = Dense(len(chars), activation='softmax', name='output_str3')(encoded_str3)
+# output_str4 = Dense(len(chars), activation='softmax', name='output_str4')(encoded_str4)
+# output_str5 = Dense(len(chars), activation='softmax', name='output_str5')(encoded_str5)
+# output_str6 = Dense(len(chars), activation='softmax', name='output_str6')(encoded_str6)
+#
+# model = Model(input=[str_1, str_2, str_3, str_4, str_5, str_6], \
+#              output=[output_str1, output_str2, output_str3, output_str4, \
+#                      output_str5, output_str6])
+#
+# optimizer = RMSprop(lr=0.01)
+# model.compile(optimizer=optimizer, loss='categorical_crossentropy', \
+#               loss_weights=[1., 1., 1., 1., 1., 1.])
 
-shared_lstm = LSTM(128)
-
-encoded_str1 = shared_lstm(str_1)
-encoded_str2 = shared_lstm(str_2)
-encoded_str3 = shared_lstm(str_3)
-encoded_str4 = shared_lstm(str_4)
-encoded_str5 = shared_lstm(str_5)
-encoded_str6 = shared_lstm(str_6)
-
-output_str1 = Dense(len(chars), activation='softmax', name='output_str1')(encoded_str1)
-output_str2 = Dense(len(chars), activation='softmax', name='output_str2')(encoded_str2)
-output_str3 = Dense(len(chars), activation='softmax', name='output_str3')(encoded_str3)
-output_str4 = Dense(len(chars), activation='softmax', name='output_str4')(encoded_str4)
-output_str5 = Dense(len(chars), activation='softmax', name='output_str5')(encoded_str5)
-output_str6 = Dense(len(chars), activation='softmax', name='output_str6')(encoded_str6)
-
-model = Model(input=[str_1, str_2, str_3, str_4, str_5, str_6], \
-             output=[output_str1, output_str2, output_str3, output_str4, \
-                     output_str5, output_str6])
-
-optimizer = RMSprop(lr=0.01)
-model.compile(optimizer=optimizer, loss='categorical_crossentropy', \
-              loss_weights=[1., 1., 1., 1., 1., 1.])
-
-model.load_weights(weights_filepath)
+model = load_model(model_filepath)
 
 def sample(preds, temperature=1.0):
     # helper function to sample an index from a probability array
@@ -126,13 +134,17 @@ for iteration in range(1, 2):
     print()
     print('-' * 50)
     print('Iteration', iteration)
-    # model.fit(fit_X, fit_label, batch_size=128, nb_epoch=800, \
+    # model.fit(X, y, batch_size=128, nb_epoch=800, callbacks=[checkpoint])
+    # model.fit(fit_X, fit_label, batch_size=1024, nb_epoch=800, \
     #                                         callbacks=[checkpoint])
+    # model.fit(fit_X, fit_label, batch_size=1024, nb_epoch=800)
+    # model.save('model_fn_api_skyrim.h5')
 
-    start_index = random.randint(0, len(text) - maxlen - 1)
+    # start_index = random.randint(0, len(s1) - maxlen - 1)
+    start_index = 0 # force start at song time 0 (sanity check)
     output_text = ''
-    for diversity in [0.2, 0.5, 1.0, 1.2, 2.0, 3.0, 5.0]:
-        output_text = '\n'
+    for diversity in [0.2, 0.5, 1.0, 1.2, 2.0, 3.0, 5.0, 100.0, 1000.0, 100000.0]:
+        output_text += '\n'
         output_text += '----- diversity:' + str(diversity) + '\n'
 
         generated1 = ''
@@ -141,45 +153,45 @@ for iteration in range(1, 2):
         generated4 = ''
         generated5 = ''
         generated6 = ''
-        s1_timestep = text[start_index: start_index + maxlen]
-        s2_timestep = text[start_index: start_index + maxlen]
-        s3_timestep = text[start_index: start_index + maxlen]
-        s4_timestep = text[start_index: start_index + maxlen]
-        s5_timestep = text[start_index: start_index + maxlen]
-        s6_timestep = text[start_index: start_index + maxlen]
+        s1_timestep = s1[start_index: start_index + maxlen]
+        s2_timestep = s2[start_index: start_index + maxlen]
+        s3_timestep = s3[start_index: start_index + maxlen]
+        s4_timestep = s4[start_index: start_index + maxlen]
+        s5_timestep = s5[start_index: start_index + maxlen]
+        s6_timestep = s6[start_index: start_index + maxlen]
         generated1 += s1_timestep
-        generated2 += s1_timestep
-        generated3 += s1_timestep
-        generated4 += s1_timestep
-        generated5 += s1_timestep
-        generated6 += s1_timestep
+        generated2 += s2_timestep
+        generated3 += s3_timestep
+        generated4 += s4_timestep
+        generated5 += s5_timestep
+        generated6 += s6_timestep
         # print('----- Generating with seed (string 1): "' + s1_timestep + '"')
         output_text += '----- Generating with seed (string 1): "' + \
                                                     s1_timestep + '"' + '\n'
         # sys.stdout.write(generated1)
         # print('----- Generating with seed (string 2): "' + s2_timestep + '"')
-        output_text += '----- Generating with seed (string 1): "' + \
+        output_text += '----- Generating with seed (string 2): "' + \
                                                     s2_timestep + '"' + '\n'
         # sys.stdout.write(generated2)
         # print('----- Generating with seed (string 3): "' + s3_timestep + '"')
-        output_text += '----- Generating with seed (string 1): "' + \
+        output_text += '----- Generating with seed (string 3): "' + \
                                                     s3_timestep + '"' + '\n'
         # sys.stdout.write(generated3)
         # print('----- Generating with seed (string 4): "' + s4_timestep + '"')
-        output_text += '----- Generating with seed (string 1): "' + \
+        output_text += '----- Generating with seed (string 4): "' + \
                                                     s4_timestep + '"' + '\n'
         # sys.stdout.write(generated4)
         # print('----- Generating with seed (string 5): "' + s5_timestep + '"')
-        output_text += '----- Generating with seed (string 1): "' + \
+        output_text += '----- Generating with seed (string 5): "' + \
                                                     s5_timestep + '"' + '\n'
         # sys.stdout.write(generated5)
         # print('----- Generating with seed (string 6): "' + s6_timestep + '"')
-        output_text += '----- Generating with seed (string 1): "' + \
+        output_text += '----- Generating with seed (string 6): "' + \
                                                     s6_timestep + '"' + '\n'
         # sys.stdout.write(generated6)
 
-        tab_chunk = ''
-        for i in range(50):
+        # tab_chunk = ''
+        for i in range(200):
             x1 = np.zeros((1, maxlen, len(chars)))
             x2 = np.zeros((1, maxlen, len(chars)))
             x3 = np.zeros((1, maxlen, len(chars)))
@@ -188,15 +200,15 @@ for iteration in range(1, 2):
             x6 = np.zeros((1, maxlen, len(chars)))
             for t, char in enumerate(s1_timestep):
                 x1[0, t, char_indices[char]] = 1.
-            for t, char in enumerate(s1_timestep):
+            for t, char in enumerate(s2_timestep):
                 x2[0, t, char_indices[char]] = 1.
-            for t, char in enumerate(s1_timestep):
+            for t, char in enumerate(s3_timestep):
                 x3[0, t, char_indices[char]] = 1.
-            for t, char in enumerate(s1_timestep):
+            for t, char in enumerate(s4_timestep):
                 x4[0, t, char_indices[char]] = 1.
-            for t, char in enumerate(s1_timestep):
+            for t, char in enumerate(s5_timestep):
                 x5[0, t, char_indices[char]] = 1.
-            for t, char in enumerate(s1_timestep):
+            for t, char in enumerate(s6_timestep):
                 x6[0, t, char_indices[char]] = 1.
 
             pred_x = [x1, x2, x3, x4, x5, x6]
@@ -227,18 +239,9 @@ for iteration in range(1, 2):
             s4_timestep = s4_timestep[1:] + next_char4
             s5_timestep = s5_timestep[1:] + next_char5
             s6_timestep = s6_timestep[1:] + next_char6
-            tab_chunk += next_char1 + next_char2 + next_char3 + next_char4 + \
+            output_text += next_char1 + next_char2 + next_char3 + next_char4 + \
                                         next_char5 + next_char6 + '.'
-        output_text += tab_chunk
 
-            # sys.stdout.write(next_char1)
-            # sys.stdout.write(next_char2)
-            # sys.stdout.write(next_char3)
-            # sys.stdout.write(next_char4)
-            # sys.stdout.write(next_char5)
-            # sys.stdout.write(next_char6)
-            # sys.stdout.write('.')
-            # sys.stdout.flush()
     if not os.path.exists('output/'):
         os.makedirs('output/')
     with open('output/output_tab' + str(iteration) + '.txt', 'w') as f:
