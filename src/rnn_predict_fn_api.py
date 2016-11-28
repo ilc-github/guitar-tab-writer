@@ -23,10 +23,10 @@ import os
 
 
 if len(sys.argv) < 3:
-    sys.exit('Usage: %s Model-filepath.h5 flat_tab_input.txt' % sys.argv[0])
+    sys.exit('Usage: %s Model-or-weights-filepath.h5 flat_tab_input.txt' % sys.argv[0])
 
 if not os.path.exists(sys.argv[1]):
-    sys.exit('ERROR: Model-filepath.h5 %s was not found!' % sys.argv[1])
+    sys.exit('ERROR: Model-or-weights-filepath.h5 %s was not found!' % sys.argv[1])
 elif not os.path.exists(sys.argv[1]):
     sys.exit('ERROR: flat_tab_input.txt %s was not found!' % sys.argv[2])
 
@@ -76,48 +76,50 @@ maxlen = 40
 
 # Build model using functional API
 # inputs: receive sequences of 40 integers,
-print('Loading model via model save file...')
-# str_1 = Input(shape=(maxlen, num_chars), name='input_1') # name these, will show up in summary
-# str_2 = Input(shape=(maxlen, num_chars), name='input_2')
-# str_3 = Input(shape=(maxlen, num_chars), name='input_3')
-# str_4 = Input(shape=(maxlen, num_chars), name='input_4')
-# str_5 = Input(shape=(maxlen, num_chars), name='input_5')
-# str_6 = Input(shape=(maxlen, num_chars), name='input_6')
-#
-# shared_lstm_1 = LSTM(128, return_sequences=True)
-#
-# encoded_str1_ = shared_lstm_1(str_1)
-# encoded_str2_ = shared_lstm_1(str_2)
-# encoded_str3_ = shared_lstm_1(str_3)
-# encoded_str4_ = shared_lstm_1(str_4)
-# encoded_str5_ = shared_lstm_1(str_5)
-# encoded_str6_ = shared_lstm_1(str_6)
-#
-# shared_lstm_2 = LSTM(128)
-#
-# encoded_str1 = shared_lstm_2(encoded_str1_)
-# encoded_str2 = shared_lstm_2(encoded_str2_)
-# encoded_str3 = shared_lstm_2(encoded_str3_)
-# encoded_str4 = shared_lstm_2(encoded_str4_)
-# encoded_str5 = shared_lstm_2(encoded_str5_)
-# encoded_str6 = shared_lstm_2(encoded_str6_)
-#
-# output_str1 = Dense(len(chars), activation='softmax', name='output_str1')(encoded_str1)
-# output_str2 = Dense(len(chars), activation='softmax', name='output_str2')(encoded_str2)
-# output_str3 = Dense(len(chars), activation='softmax', name='output_str3')(encoded_str3)
-# output_str4 = Dense(len(chars), activation='softmax', name='output_str4')(encoded_str4)
-# output_str5 = Dense(len(chars), activation='softmax', name='output_str5')(encoded_str5)
-# output_str6 = Dense(len(chars), activation='softmax', name='output_str6')(encoded_str6)
-#
-# model = Model(input=[str_1, str_2, str_3, str_4, str_5, str_6], \
-#              output=[output_str1, output_str2, output_str3, output_str4, \
-#                      output_str5, output_str6])
-#
-# optimizer = RMSprop(lr=0.01)
-# model.compile(optimizer=optimizer, loss='categorical_crossentropy', \
-#               loss_weights=[1., 1., 1., 1., 1., 1.])
+# print('Loading model via model save file...')
+print('Loading model via weights save file...')
+str_1 = Input(shape=(maxlen, num_chars), name='input_1') # name these, will show up in summary
+str_2 = Input(shape=(maxlen, num_chars), name='input_2')
+str_3 = Input(shape=(maxlen, num_chars), name='input_3')
+str_4 = Input(shape=(maxlen, num_chars), name='input_4')
+str_5 = Input(shape=(maxlen, num_chars), name='input_5')
+str_6 = Input(shape=(maxlen, num_chars), name='input_6')
 
-model = load_model(model_filepath)
+shared_lstm_1 = LSTM(128, return_sequences=True)
+
+encoded_str1_ = shared_lstm_1(str_1)
+encoded_str2_ = shared_lstm_1(str_2)
+encoded_str3_ = shared_lstm_1(str_3)
+encoded_str4_ = shared_lstm_1(str_4)
+encoded_str5_ = shared_lstm_1(str_5)
+encoded_str6_ = shared_lstm_1(str_6)
+
+shared_lstm_2 = LSTM(128)
+
+encoded_str1 = shared_lstm_2(encoded_str1_)
+encoded_str2 = shared_lstm_2(encoded_str2_)
+encoded_str3 = shared_lstm_2(encoded_str3_)
+encoded_str4 = shared_lstm_2(encoded_str4_)
+encoded_str5 = shared_lstm_2(encoded_str5_)
+encoded_str6 = shared_lstm_2(encoded_str6_)
+
+output_str1 = Dense(len(chars), activation='softmax', name='output_str1')(encoded_str1)
+output_str2 = Dense(len(chars), activation='softmax', name='output_str2')(encoded_str2)
+output_str3 = Dense(len(chars), activation='softmax', name='output_str3')(encoded_str3)
+output_str4 = Dense(len(chars), activation='softmax', name='output_str4')(encoded_str4)
+output_str5 = Dense(len(chars), activation='softmax', name='output_str5')(encoded_str5)
+output_str6 = Dense(len(chars), activation='softmax', name='output_str6')(encoded_str6)
+
+model = Model(input=[str_1, str_2, str_3, str_4, str_5, str_6], \
+             output=[output_str1, output_str2, output_str3, output_str4, \
+                     output_str5, output_str6])
+
+optimizer = RMSprop(lr=0.01)
+model.compile(optimizer=optimizer, loss='categorical_crossentropy', \
+              loss_weights=[1., 1., 1., 1., 1., 1.])
+
+# model = load_model(model_filepath)
+model.load_weights(model_filepath)
 
 def sample(preds, temperature=1.0):
     # helper function to sample an index from a probability array
@@ -143,7 +145,7 @@ for iteration in range(1, 2):
     # start_index = random.randint(0, len(s1) - maxlen - 1)
     start_index = 0 # force start at song time 0 (sanity check)
     output_text = ''
-    for diversity in [0.2, 0.5, 1.0, 1.2, 2.0, 3.0, 5.0, 100.0, 1000.0, 100000.0]:
+    for diversity in [0.2, 0.5, 1.0, 1.2, 2.0, 3.0, 5.0, 10.0]:
         output_text += '\n'
         output_text += '----- diversity:' + str(diversity) + '\n'
 

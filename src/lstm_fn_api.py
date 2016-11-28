@@ -85,16 +85,18 @@ def vectorize(string_txt, maxlen=40, step=3):
         y[i, char_indices[next_chars[i]]] = 1
     return X, y
 
-X1, y1 = vectorize(s1)
-X2, y2 = vectorize(s2)
-X3, y3 = vectorize(s3)
-X4, y4 = vectorize(s4)
-X5, y5 = vectorize(s5)
-X6, y6 = vectorize(s6)
-
 ''' Set maxlen
 '''
-maxlen = 40
+maxlen = 60
+
+X1, y1 = vectorize(s1, maxlen, 1)
+X2, y2 = vectorize(s2, maxlen, 1)
+X3, y3 = vectorize(s3, maxlen, 1)
+X4, y4 = vectorize(s4, maxlen, 1)
+X5, y5 = vectorize(s5, maxlen, 1)
+X6, y6 = vectorize(s6, maxlen, 1)
+
+
 
 # Build model using functional API
 # inputs: receive sequences of 40 integers,
@@ -184,7 +186,7 @@ for iteration in range(1, 2):
 
     start_index = random.randint(0, len(s1) - maxlen - 1)
     output_text = ''
-    for diversity in [0.2, 0.5, 1.0, 1.2, 2.0, 3.0, 5.0, 100.0, 1000.0, 100000.0]:
+    for diversity in [0.2, 0.5, 1.0, 1.2, 2.0, 3.0, 5.0, 10.0]:
         output_text += '\n'
         output_text += '----- diversity:' + str(diversity) + '\n'
 
