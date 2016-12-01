@@ -5,8 +5,8 @@ import time
 import re
 
 
-''' Modify starter project data (500mb guitar tabs)
- * create smaller dataset for experimentation (~300k lines)
+''' Pre-processing guitar tab data
+ * limit input size
  * create pre-processed input file (alternate input layout; reduce character
  class imbalances)
 '''
