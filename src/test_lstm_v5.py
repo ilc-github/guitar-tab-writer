@@ -1,10 +1,6 @@
-'''Example script to generate text from Nietzsche's writings.
-At least 20 epochs are required before the generated text
-starts sounding coherent.
-It is recommended to run this script on GPU, as recurrent
-networks are quite computationally intensive.
-If you try this script on new data, make sure your corpus
-has at least ~100k characters. ~1M is better.
+'''
+Testing auto-save model checkpoints (only saves model weights)
+Keras docs lstm_text_generation example code.
 '''
 
 from __future__ import print_function
@@ -35,11 +31,6 @@ text_filepath = sys.argv[1]
 Using base LSTM text generation example from Keras repo
 '''
 
-# path = get_file('nietzsche.txt', origin="https://s3.amazonaws.com/text-datasets/nietzsche.txt")
-# path = 'flat_tabs_clean.txt'
-# path = '../data/flat_tabs_clean.txt'
-# path = 'flat_tabs_mini1.txt'
-# path = '../data/flat_tabs_nb1.txt'
 path = text_filepath
 text = open(path).read().lower()
 print('corpus length:', len(text))
