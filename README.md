@@ -2,9 +2,8 @@
 
 ## __Overview__
 + Goal of the project?
-+ How did you accomplish this goal? (not too technical)
++ How did you accomplish this goal?
 + Results?
-+ How to view the work? (Link to live app)
 
 ## __In-depth Explanation of Process__
 + Algorithms/techniques used?
