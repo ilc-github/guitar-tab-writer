@@ -1,4 +1,5 @@
 '''
+**TEST**
 Modified version of the keras docs lstm_text_generation example code.
 '''
 
