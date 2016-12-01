@@ -1,10 +1,6 @@
-'''Example script to generate text from Nietzsche's writings.
-At least 20 epochs are required before the generated text
-starts sounding coherent.
-It is recommended to run this script on GPU, as recurrent
-networks are quite computationally intensive.
-If you try this script on new data, make sure your corpus
-has at least ~100k characters. ~1M is better.
+'''
+**Test** Load model weights and write outputs to text file.
+Keras docs lstm_text_generation example code.
 '''
 
 from __future__ import print_function
